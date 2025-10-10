@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Categorías</h2>
+    <button class="btn btn-primary" id="btnNewCategoria">Agregar categoría</button>
+  </div>
+
+  {% if categorias %}
+  <div class="list-group">
+    {% for c in categorias %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">{{ c.nombre }}</div>
+          <div class="text-muted small">{{ c.descripcion }}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary btnEditCategoria" data-id="{{ c._id }}" data-nombre="{{ c.nombre|e }}" data-descripcion="{{ c.descripcion|e }}">Editar</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="openConfirmDelete('{{ c._id }}', '{{ c.nombre|e }}')">Eliminar</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p>No hay categorías.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  // Create/Edit modal markup
+  const categoriaModalHtml = `
+  <div class="modal fade" id="categoriaModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoriaModalLabel">Nueva categoría</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="categoriaForm">
+            <input type="hidden" name="edit_id" id="categoria_edit_id" />
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input name="nombre" id="categoria_nombre" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Descripción</label>
+              <textarea name="descripcion" id="categoria_descripcion" class="form-control"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="categoriaSave" type="button" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', categoriaModalHtml);
+
+  const categoriaModal = new bootstrap.Modal(document.getElementById('categoriaModal'));
+
+  document.getElementById('btnNewCategoria').addEventListener('click', ()=>{
+    document.getElementById('categoriaForm').reset();
+    document.getElementById('categoria_edit_id').value = '';
+    document.getElementById('categoriaModalLabel').innerText = 'Nueva categoría';
+    categoriaModal.show();
+  });
+
+  document.querySelectorAll('.btnEditCategoria').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const nombre = btn.dataset.nombre;
+      const descripcion = btn.dataset.descripcion;
+      document.getElementById('categoria_edit_id').value = id;
+      document.getElementById('categoria_nombre').value = nombre;
+      document.getElementById('categoria_descripcion').value = descripcion;
+      document.getElementById('categoriaModalLabel').innerText = 'Editar categoría';
+      categoriaModal.show();
+    });
+  });
+
+  document.getElementById('categoriaSave').addEventListener('click', async (event)=>{
+    event.preventDefault();
+    const form = document.getElementById('categoriaForm');
+    const data = new FormData(form);
+    const payload = {};
+    data.forEach((v,k)=> payload[k]=v);
+    try{
+        let resp;
+        if(payload.edit_id===''){ delete payload.edit_id; 
+            resp = await fetch(`{{ url_for('categoria.crear_categoria') }}`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        }else{
+            const edit_id = payload.edit_id; delete payload.edit_id;
+            resp = await fetch(`{{ url_for('categoria.actualizar_categoria', categoria_id='') }}/${edit_id}`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        }
+
+        const r = await resp.json().catch(()=>null);
+        console.log(r);
+        if(resp.ok){ location.reload(); } else { alert(r?.message || 'Error'); }
+    }catch(e){ alert('Error: '+e); }
+  });
+</script>
+{% endblock %}

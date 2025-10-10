@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Tags{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Tags</h2>
+    <button class="btn btn-primary" id="btnNewTag">Agregar tag</button>
+  </div>
+
+  {% if tags %}
+  <div class="list-group">
+    {% for t in tags %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">{{ t.nombre }}</div>
+          <div class="text-muted small">{{ t.descripcion }}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="{{ t._id }}" data-nombre="{{ t.nombre|e }}" data-descripcion="{{ t.descripcion|e }}">Editar</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="openConfirmDeleteTag('{{ t._id }}', '{{ t.nombre|e }}')">Eliminar</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p>No hay tags.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  const tagModalHtml = `
+  <div class="modal fade" id="tagModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="tagModalLabel">Nuevo tag</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="tagForm">
+            <input type="hidden" name="edit_id" id="tag_edit_id" />
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input name="nombre" id="tag_nombre" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Descripcion</label>
+              <textarea name="descripcion" id="tag_descripcion" class="form-control"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="tagSave" type="button" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', tagModalHtml);
+
+  const tagModal = new bootstrap.Modal(document.getElementById('tagModal'));
+
+  document.getElementById('btnNewTag').addEventListener('click', ()=>{
+    document.getElementById('tagForm').reset();
+    document.getElementById('tag_edit_id').value = '';
+    document.getElementById('tagModalLabel').innerText = 'Nuevo tag';
+    tagModal.show();
+  });
+
+  document.querySelectorAll('.btnEditTag').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const nombre = btn.dataset.nombre;
+      const descripcion = btn.dataset.descripcion;
+      document.getElementById('tag_edit_id').value = id;
+      document.getElementById('tag_nombre').value = nombre;
+      document.getElementById('tag_descripcion').value = descripcion;
+      document.getElementById('tagModalLabel').innerText = 'Editar tag';
+      tagModal.show();
+    });
+  });
+
+  document.getElementById('tagSave').addEventListener('click', async (event)=>{
+    event.preventDefault();
+    const form = document.getElementById('tagForm');
+    const data = new FormData(form);
+    const payload = {};
+    data.forEach((v,k)=> payload[k]=v);
+    try{
+        let resp;
+        if(payload.edit_id===''){ delete payload.edit_id; 
+            resp = await fetch(`{{ url_for('tag.crear_tag') }}`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        }else{
+            const edit_id = payload.edit_id; delete payload.edit_id;
+            resp = await fetch(`{{ url_for('tag.actualizar_tag', tag_id='') }}/${edit_id}`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        }
+
+        const r = await resp.json().catch(()=>null);
+        if(resp.ok){ location.reload(); } else { alert(r?.message || 'Error'); }
+    }catch(e){ alert('Error: '+e); }
+  });
+
+  function openConfirmDeleteTag(id, nombre){
+    if(!confirm(`Eliminar tag "${nombre}" ?`)) return;
+    fetch(`{{ url_for('tag.eliminar_tag', tag_id='') }}/${id}`, { method: 'DELETE'}).then(async r=>{
+      if(r.ok) location.reload(); else { const j=await r.json().catch(()=>null); alert(j?.message||'Error'); }
+    }).catch(e=>alert('Error: '+e));
+  }
+</script>
+{% endblock %}

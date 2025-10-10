@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar Libro{% endblock %}
+
+{% block extra_css %}
+<style>
+  .animate-card{ transform: translateY(18px); opacity: 0; transition: all 380ms ease-out; }
+  .animate-card.show{ transform: translateY(0); opacity: 1; }
+  .input-hover:hover{ box-shadow: 0 6px 18px rgba(91,141,239,0.12); transition: box-shadow .18s ease; }
+  .input-hover .form-control:focus{ box-shadow: 0 8px 24px rgba(91,141,239,0.18); border-color: #5b8def; }
+  .card-header .bi{ font-size: 1.6rem; }
+  .form-control-lg{ padding: .75rem 1rem; }
+  .needs-validation .is-invalid{ box-shadow: none; }
+  @media (prefers-reduced-motion: reduce){ .animate-card{ transition: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container ">
+  <div class="row justify-content-center">
+    <div class="col-lg-9 col-md-10">
+      <div class="card shadow-lg p-0 rounded-4 overflow-hidden animate-card">
+        <div class="card-header p-4 text-white" style="background: linear-gradient(135deg,#5b8def 0%, #7ad0ff 100%);">
+          <div class="d-flex align-items-center">
+            <div class="me-3 display-6">
+              <i class="bi bi-book-half"></i>
+            </div>
+            <div>
+              <h3 class="mb-0">Agregar / Editar Libro</h3>
+              <small class="opacity-75">Completa la información básica para tu catálogo</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-4 bg-white">
+          {% if errors %}
+            <div class="alert alert-warning rounded-3">
+              <strong>Errores:</strong>
+              <ul class="mb-0">
+                {% for field, msgs in errors.items() %}
+                  <li><strong>{{ field }}:</strong> {{ msgs }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <form id="bookForm" method="post" action="{{ url_for('libro.crear_libro_web') }}" class="row g-3 needs-validation" novalidate>
+            <input type="hidden" name="edit_id" id="book_edit_id" value="{{ request.args.get('edit_id', '') }}" />
+
+            <div class="col-md-6">
+              <label class="form-label small">Título</label>
+              <div class="input-group shadow-sm input-hover">
+                <span class="input-group-text bg-white"><i class="bi bi-type"></i></span>
+                <input name="titulo" id="titulo" class="form-control form-control-lg {% if errors and errors.get('titulo') %}is-invalid{% endif %}" placeholder="Ej. Cien años de soledad" required value="{{ data.titulo if data else '' }}" />
+                {% if errors and errors.get('titulo') %}
+                  <div class="invalid-feedback">{{ errors.get('titulo') }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Autor</label>
+              <div class="input-group shadow-sm input-hover">
+                <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                <input name="autor" id="autor" class="form-control form-control-lg {% if errors and errors.get('autor') %}is-invalid{% endif %}" placeholder="Nombre del autor" required value="{{ data.autor if data else '' }}" />
+                {% if errors and errors.get('autor') %}
+                  <div class="invalid-feedback">{{ errors.get('autor') }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Género</label>
+              <input name="genero" id="genero" class="form-control {% if errors and errors.get('genero') %}is-invalid{% endif %}" placeholder="Ficción, Historia..." required value="{{ data.genero if data else '' }}" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Año</label>
+              <input name="año_publicacion" id="anio" type="number" min="0" max="2100" class="form-control {% if errors and errors.get('año_publicacion') %}is-invalid{% endif %}" required value="{{ data.año_publicacion if data else data.get('año_publicacion') if data else '' }}" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Páginas</label>
+              <input name="paginas" id="paginas" type="number" min="1" class="form-control {% if errors and errors.get('paginas') %}is-invalid{% endif %}" required value="{{ data.paginas if data else '' }}" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Editorial</label>
+              <input name="editorial" id="editorial" class="form-control" placeholder="Editorial" required value="{{ data.editorial if data else '' }}" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Idioma</label>
+              <input name="idioma" id="idioma" class="form-control" placeholder="Español" required value="{{ data.idioma if data else '' }}" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small">ISBN</label>
+              <input name="isbn" id="isbn" class="form-control" placeholder="978-..." value="{{ data.isbn if data else '' }}" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small">Origen (país)</label>
+              <input name="origen_pais" id="origen_pais" class="form-control" placeholder="País de origen" required value="{{ data.origen_pais if data else '' }}" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small">Descripción</label>
+              <textarea name="descripcion" id="descripcion" class="form-control" rows="4" placeholder="Una breve sinopsis...">{{ data.descripcion if data else '' }}</textarea>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+              <a href="{{ url_for('libro.lista_libros_web') }}" class="btn btn-outline-secondary">Cancelar</a>
+              <button id="bookSave" class="btn btn-primary btn-lg px-4">
+                <span id="bookSpinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                <span id="bookSaveText">Guardar</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Bootstrap validation + submit spinner
+(() => {
+  const form = document.getElementById('bookForm');
+  const saveBtn = document.getElementById('bookSave');
+  const spinner = document.getElementById('bookSpinner');
+  const saveText = document.getElementById('bookSaveText');
+
+  if (!form) return;
+
+  form.addEventListener('submit', function (e) {
+    if (!form.checkValidity()) {
+      e.preventDefault();
+      e.stopPropagation();
+      form.classList.add('was-validated');
+      return;
+    }
+
+    // disable button to prevent double submit
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      spinner.classList.remove('d-none');
+      saveText.textContent = 'Guardando...';
+    }
+  }, false);
+})();
+</script>
+<script>
+// entrance animation for the card
+(() => {
+  const card = document.querySelector('.animate-card');
+  if (!card) return;
+  // Allow CSS to render then add class
+  requestAnimationFrame(()=> setTimeout(()=> card.classList.add('show'), 60));
+})();
+</script>
+{% endblock %}
