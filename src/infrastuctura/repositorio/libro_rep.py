@@ -23,30 +23,28 @@ class LibroRepositorio(libro_prt.LibroPuerto):
             print(f"Error al obtener libro: {e}")
             raise APIError("Error al obtener libro")
 
-    def obtenerLibros(self, filtro: libro_mod.FiltroLibroModelo) -> List[libro_mod.LibroModeloDTO]:
+    def obtenerLibros(self, filtro: libro_mod.FiltroLibroModelo, offset: int = None, limit: int = None) -> List[libro_mod.LibroModeloDTO]:
         try:
             query = self._construir_query(filtro)
-            respuesta = self.collection.find(query).sort("fecha_creacion", -1)  # Más recientes primero
-            
-            libros = []
-            for libro in respuesta:
-                libros.append(self._convertir_a_dto(libro))
-            return libros
+            cursor = self.collection.find(query).sort("fecha_creacion", -1)  # Más recientes primero
 
+            # Aplicar paginación en la consulta cuando se proporcionen offset/limit
+            if isinstance(offset, int) and offset > 0:
+                cursor = cursor.skip(offset)
+            if isinstance(limit, int) and limit > 0:
+                cursor = cursor.limit(limit)
+            # print(cursor)
+            # libros = []
+            # for libro in cursor:
+            #     libros.append(self._convertir_a_dto(libro))
+            # return libros
+            return cursor
         except Exception as e:
             print(f"Error al obtener libros: {e}")
             raise APIError("Error al obtener libros")
 
     def crearLibro(self, libro: libro_mod.LibroModelo) -> str:
         try:
-            # Agregar fecha de creación si no existe
-            if libro.fecha_creacion is None:
-                libro.fecha_creacion = datetime.now()
-            
-            # Validar ISBN único
-            if self._isbn_existe(libro.isbn):
-                raise APIError("Ya existe un libro con este ISBN")
-            
             libro_dict = libro.__dict__
             result = self.collection.insert_one(libro_dict)
             print(f"Libro creado con ID: {result.inserted_id}")
@@ -61,10 +59,6 @@ class LibroRepositorio(libro_prt.LibroPuerto):
         try:
             # Agregar fecha de modificación
             libro.fecha_modificacion = datetime.now()
-            
-            # Validar ISBN único (excluyendo el libro actual)
-            if self._isbn_existe(libro.isbn, excluir_id=libro_id):
-                raise APIError("Ya existe otro libro con este ISBN")
             
             libro_dict = libro.__dict__
             result = self.collection.update_one(
@@ -89,60 +83,6 @@ class LibroRepositorio(libro_prt.LibroPuerto):
         except Exception as e:
             print(f"Error al eliminar libro: {e}")
             raise APIError("Error al eliminar libro")
-
-    def buscarLibrosPorTexto(self, texto: str) -> List[libro_mod.LibroModeloDTO]:
-        try:
-            # Búsqueda de texto en múltiples campos
-            regex_pattern = re.compile(texto, re.IGNORECASE)
-            query = {
-                "$or": [
-                    {"titulo": {"$regex": regex_pattern}},
-                    {"autor": {"$regex": regex_pattern}},
-                    {"descripcion": {"$regex": regex_pattern}},
-                    {"editorial": {"$regex": regex_pattern}},
-                    {"tags": {"$regex": regex_pattern}}
-                ],
-                "disponible": True
-            }
-            
-            respuesta = self.collection.find(query).sort("calificacion_promedio", -1)
-            
-            libros = []
-            for libro in respuesta:
-                libros.append(self._convertir_a_dto(libro))
-            return libros
-
-        except Exception as e:
-            print(f"Error al buscar libros por texto: {e}")
-            raise APIError("Error al buscar libros")
-
-    def obtenerLibrosPorGenero(self, genero: str) -> List[libro_mod.LibroModeloDTO]:
-        try:
-            query = {"genero": {"$regex": genero, "$options": "i"}, "disponible": True}
-            respuesta = self.collection.find(query).sort("calificacion_promedio", -1)
-            
-            libros = []
-            for libro in respuesta:
-                libros.append(self._convertir_a_dto(libro))
-            return libros
-
-        except Exception as e:
-            print(f"Error al obtener libros por género: {e}")
-            raise APIError("Error al obtener libros por género")
-
-    def obtenerLibrosPorAutor(self, autor: str) -> List[libro_mod.LibroModeloDTO]:
-        try:
-            query = {"autor": {"$regex": autor, "$options": "i"}, "disponible": True}
-            respuesta = self.collection.find(query).sort("año_publicacion", -1)
-            
-            libros = []
-            for libro in respuesta:
-                libros.append(self._convertir_a_dto(libro))
-            return libros
-
-        except Exception as e:
-            print(f"Error al obtener libros por autor: {e}")
-            raise APIError("Error al obtener libros por autor")
 
     def _construir_query(self, filtro: libro_mod.FiltroLibroModelo) -> dict:
         """Construye la query de MongoDB basada en el filtro"""
@@ -179,25 +119,3 @@ class LibroRepositorio(libro_prt.LibroPuerto):
             query["tags"] = {"$in": filtro.tags}
             
         return query
-
-    def _convertir_a_dto(self, documento: dict) -> libro_mod.LibroModeloDTO:
-        """Convierte un documento de MongoDB a LibroModeloDTO"""
-        documento["_id"] = str(documento["_id"])
-        
-        # Manejar campos opcionales
-        if "tags" not in documento:
-            documento["tags"] = []
-        if "calificacion_promedio" not in documento:
-            documento["calificacion_promedio"] = 0.0
-        if "numero_calificaciones" not in documento:
-            documento["numero_calificaciones"] = 0
-            
-        return libro_mod.LibroModeloDTO(**documento)
-
-    def _isbn_existe(self, isbn: str, excluir_id: str = None) -> bool:
-        """Verifica si un ISBN ya existe en la base de datos"""
-        query = {"isbn": isbn}
-        if excluir_id:
-            query["_id"] = {"$ne": ObjectId(excluir_id)}
-        
-        return self.collection.find_one(query) is not None

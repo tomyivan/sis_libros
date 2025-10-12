@@ -7,7 +7,7 @@ from typing import List, Optional
 class LibroModelo:
     titulo: str
     autor: str
-    genero: str
+    genero: List[str]
     año_publicacion: int
     editorial: str
     isbn: str
@@ -18,8 +18,6 @@ class LibroModelo:
     disponible: bool = True
     fecha_creacion: datetime = None
     fecha_modificacion: Optional[datetime] = None
-    calificacion_promedio: float = 0.0
-    numero_calificaciones: int = 0
     portada_url: Optional[str] = None
     tags: Optional[List[str]] = None
 
@@ -39,8 +37,6 @@ class LibroModeloDTO:
     disponible: bool
     fecha_creacion: datetime
     fecha_modificacion: Optional[datetime] = None
-    calificacion_promedio: float = 0.0
-    numero_calificaciones: int = 0
     portada_url: Optional[str] = None
     tags: Optional[List[str]] = None
 

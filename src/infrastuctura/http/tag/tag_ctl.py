@@ -14,9 +14,20 @@ class TagControlador:
 
     def obtenerTags(self):
         try:
-            tags = self.app.obtenerTags()
+            # Paginación y búsqueda básica
+            try:
+                offset = int(request.args.get('offset', 0))
+            except ValueError:
+                offset = 0
+            try:
+                limit = int(request.args.get('limit', 10))
+            except ValueError:
+                limit = 10
+            q = request.args.get('q')
+
+            tags = self.app.obtenerTags(offset=offset, limit=limit, q=q)
             tags_dict = [t.__dict__ for t in tags]
-            return jsonify(ResponseApi.exito({'tags': tags_dict, 'total': len(tags_dict)}, 200))
+            return jsonify(ResponseApi.exito({'tags': tags_dict, 'total': len(tags_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 
@@ -73,15 +84,10 @@ class TagControlador:
     # Web views
     def lista_tags(self):
         try:
-            tags = self.app.obtenerTags()
-            tags_list = [t.__dict__ for t in tags]
-            return render_template('tag/list.html', tags=tags_list)
+            primeros = self.app.obtenerTags(offset=0, limit=10)
+            tags_list = [t.__dict__ for t in primeros]
+            return render_template('tag/list.html', tags=tags_list, initial_limit=10)
         except Exception as e:
             print(e)
             flash('Error al listar tags', 'danger')
             return redirect(url_for('dashboard'))
-
-    def crear_tag_web(self):
-        if request.method == 'GET':
-            return render_template('tag/create.html')
-        return self.crearTag()

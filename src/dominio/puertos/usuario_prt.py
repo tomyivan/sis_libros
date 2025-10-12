@@ -1,9 +1,10 @@
 # Se define la interfaz para las operaciones relacionadas con usuarios.
 from abc import ABC, abstractmethod
+from typing import List
 from src.dominio.modelos import usuario_mod
 class UsuarioPuerto(ABC):
     @abstractmethod
-    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> list[usuario_mod.UsuarioModeloDTO]:
+    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> List[usuario_mod.UsuarioModeloDTO]:
         pass
 
     @abstractmethod

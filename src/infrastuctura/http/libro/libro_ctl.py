@@ -1,5 +1,6 @@
 from flask import request, jsonify, render_template, redirect, url_for, flash
 from src.app.libro_app import LibroApp
+from src.infrastuctura.dependencias import categoria_dep, tag_dep, genero_dep, idioma_dep, pais_dep
 from src.util.responseApi import ResponseApi
 from src.custom.error_custom import APIError
 from marshmallow import Schema, fields, ValidationError
@@ -10,18 +11,19 @@ class LibroCreateSchema(Schema):
                           error_messages={'required': 'El título es requerido', 'invalid': 'El título no puede estar vacío'})
     autor = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
                          error_messages={'required': 'El autor es requerido', 'invalid': 'El autor no puede estar vacío'})
-    genero = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
+    genero = fields.List(fields.String(), required=True, validate=lambda x: len(x) > 0,
                           error_messages={'required': 'El género es requerido', 'invalid': 'El género no puede estar vacío'})
     año_publicacion = fields.Integer(required=True, validate=lambda x: 1000 <= x <= 2025,
                                    error_messages={'required': 'El año de publicación es requerido', 'invalid': 'El año debe estar entre 1000 y 2025'})
     editorial = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
                              error_messages={'required': 'La editorial es requerida', 'invalid': 'La editorial no puede estar vacía'})
-    isbn = fields.String(required=True, validate=lambda x: len(x.replace('-', '').replace(' ', '')) in [10, 13],
-                        error_messages={'required': 'El ISBN es requerido', 'invalid': 'El ISBN debe tener 10 o 13 dígitos'})
     paginas = fields.Integer(required=True, validate=lambda x: x > 0,
                            error_messages={'required': 'El número de páginas es requerido', 'invalid': 'El número de páginas debe ser mayor a 0'})
     idioma = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
                           error_messages={'required': 'El idioma es requerido', 'invalid': 'El idioma no puede estar vacío'})
+    isbn = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
+                        error_messages={'required': 'El ISBN es requerido', 'invalid': 'El ISBN no puede estar vacío'})
+    categoria = fields.String(missing='')
     descripcion = fields.String(required=True, validate=lambda x: len(x.strip()) > 10,
                                error_messages={'required': 'La descripción es requerida', 'invalid': 'La descripción debe tener al menos 10 caracteres'})
     origen_pais = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
@@ -34,13 +36,6 @@ class LibroUpdateSchema(LibroCreateSchema):
     # Hereda todos los campos de creación
     pass
 
-class CalificacionSchema(Schema):
-    calificacion = fields.Float(required=True, validate=lambda x: 1.0 <= x <= 5.0,
-                               error_messages={'required': 'La calificación es requerida', 'invalid': 'La calificación debe estar entre 1.0 y 5.0'})
-
-class BusquedaSchema(Schema):
-    texto = fields.String(required=True, validate=lambda x: len(x.strip()) >= 3,
-                         error_messages={'required': 'El texto de búsqueda es requerido', 'invalid': 'El texto debe tener al menos 3 caracteres'})
 
 class LibroControlador:
     def __init__(self, app: LibroApp):
@@ -49,8 +44,10 @@ class LibroControlador:
     def obtenerLibros(self):
         """Obtener lista de libros con filtros opcionales"""
         try:
-            # Obtener parámetros de query
+            # Obtener parámetros de query: filtros, paginación y búsqueda
             filtros = {}
+            if request.args.get('titulo'):
+                filtros['titulo'] = request.args.get('titulo')
             if request.args.get('genero'):
                 filtros['genero'] = request.args.get('genero')
             if request.args.get('autor'):
@@ -65,16 +62,31 @@ class LibroControlador:
                 filtros['origen_pais'] = request.args.get('origen_pais')
             if request.args.get('disponible') is not None:
                 filtros['disponible'] = request.args.get('disponible').lower() == 'true'
+            # Paginación lazy: offset/limit
+            try:
+                offset = int(request.args.get('offset', 0))
+            except ValueError:
+                offset = 0
+            try:
+                limit = int(request.args.get('limit', 6))
+            except ValueError:
+                limit = 6
 
-            libros = self.app.obtenerLibros(filtros if filtros else None)
-            
+            # Búsqueda por texto genérico (q)
+            q = request.args.get('q')
+
+            libros = self.app.obtenerLibros(filtros if filtros else None, offset=offset, limit=limit, q=q)
+
             # Convertir a dict para JSON
             libros_dict = [libro.__dict__ for libro in libros]
-            
-            return jsonify(ResponseApi.exito({
+
+            return jsonify(ResponseApi.exito('Libro encontrados',{
                 'libros': libros_dict,
-                'total': len(libros_dict)
-            }, 200))
+                'total': len(libros_dict),
+                'offset': offset,
+                'limit': limit,
+                'q': q
+            }))
             
         except Exception as e:
             return jsonify(ResponseApi.error(f"Error al obtener libros: {str(e)}", 500))
@@ -158,142 +170,16 @@ class LibroControlador:
         except Exception as e:
             return jsonify(ResponseApi.error(f"Error en el servidor: {str(e)}", 500))
 
-    def reactivarLibro(self, libro_id: str):
-        """Reactivar un libro previamente eliminado"""
-        try:
-            success = self.app.reactivarLibro(libro_id)
-            
-            if success:
-                return jsonify(ResponseApi.exito({
-                    'message': 'Libro reactivado exitosamente'
-                }, 200))
-            else:
-                return jsonify(ResponseApi.error("No se pudo reactivar el libro", 400))
-                
-        except ValueError as e:
-            return jsonify(ResponseApi.error(str(e), 400))
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error en el servidor: {str(e)}", 500))
 
-    def buscarLibros(self):
-        """Buscar libros por texto"""
-        try:
-            data = request.args.to_dict() if request.method == 'GET' else request.get_json()
-            
-            # Validar datos
-            schema = BusquedaSchema()
-            validated_data = schema.load(data)
-            
-            libros = self.app.buscarLibros(validated_data['texto'])
-            
-            # Convertir a dict para JSON
-            libros_dict = [libro.__dict__ for libro in libros]
-            
-            return jsonify(ResponseApi.exito({
-                'libros': libros_dict,
-                'total': len(libros_dict),
-                'termino_busqueda': validated_data['texto']
-            }, 200))
-            
-        except ValidationError as e:
-            return jsonify(ResponseApi.error(f"Error de validación: {e.messages}", 400))
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error en el servidor: {str(e)}", 500))
-
-    def calificarLibro(self, libro_id: str):
-        """Agregar una calificación a un libro"""
-        try:
-            data = request.get_json()
-            
-            # Validar datos
-            schema = CalificacionSchema()
-            validated_data = schema.load(data)
-            
-            modified_count = self.app.calificarLibro(libro_id, validated_data['calificacion'])
-            
-            if modified_count > 0:
-                return jsonify(ResponseApi.exito({
-                    'message': 'Calificación agregada exitosamente',
-                    'calificacion': validated_data['calificacion']
-                }, 200))
-            else:
-                return jsonify(ResponseApi.error("No se pudo agregar la calificación", 400))
-                
-        except ValidationError as e:
-            return jsonify(ResponseApi.error(f"Error de validación: {e.messages}", 400))
-        except ValueError as e:
-            return jsonify(ResponseApi.error(str(e), 400))
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error en el servidor: {str(e)}", 500))
-
-    def obtenerLibrosPorGenero(self, genero: str):
-        """Obtener libros por género"""
-        try:
-            libros = self.app.obtenerLibrosPorGenero(genero)
-            
-            # Convertir a dict para JSON
-            libros_dict = [libro.__dict__ for libro in libros]
-            
-            return jsonify(ResponseApi.exito({
-                'libros': libros_dict,
-                'total': len(libros_dict),
-                'genero': genero
-            }, 200))
-            
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error al obtener libros por género: {str(e)}", 500))
-
-    def obtenerLibrosPorAutor(self, autor: str):
-        """Obtener libros por autor"""
-        try:
-            libros = self.app.obtenerLibrosPorAutor(autor)
-            
-            # Convertir a dict para JSON
-            libros_dict = [libro.__dict__ for libro in libros]
-            
-            return jsonify(ResponseApi.exito({
-                'libros': libros_dict,
-                'total': len(libros_dict),
-                'autor': autor
-            }, 200))
-            
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error al obtener libros por autor: {str(e)}", 500))
-
-    def obtenerEstadisticas(self):
-        """Obtener estadísticas de libros"""
-        try:
-            estadisticas = self.app.obtenerEstadisticasLibros()
-            return jsonify(ResponseApi.exito(estadisticas, 200))
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error al obtener estadísticas: {str(e)}", 500))
-
-    def obtenerMejorCalificados(self):
-        """Obtener libros mejor calificados"""
-        try:
-            limite = int(request.args.get('limite', 10))
-            libros = self.app.obtenerLibrosMejorCalificados(limite)
-            
-            # Convertir a dict para JSON
-            libros_dict = [libro.__dict__ for libro in libros]
-            
-            return jsonify(ResponseApi.exito({
-                'libros': libros_dict,
-                'total': len(libros_dict),
-                'limite': limite
-            }, 200))
-            
-        except Exception as e:
-            return jsonify(ResponseApi.error(f"Error al obtener libros mejor calificados: {str(e)}", 500))
 
     # --- Vistas web ---
     def lista_libros(self):
         """Renderiza la lista de libros en una plantilla web"""
         try:
-            # Obtener todos los libros (puede extenderse con filtros por query)
-            libros = self.app.obtenerLibros(None)
-            libros_list = [libro.__dict__ for libro in libros]
-            return render_template('books/list.html', libros=libros_list)
+            # Obtener primeros 10 libros para la vista inicial (lazy load)
+            primeros = self.app.obtenerLibros(None, offset=0, limit=6)
+            libros_list = [libro.__dict__ for libro in primeros]
+            return render_template('books/list.html', libros=libros_list, initial_limit=6)
         except Exception as e:
             # Para la vista web, mostramos un mensaje flash y redirigimos al dashboard
             flash(f"Error al obtener libros: {str(e)}", 'danger')
@@ -301,63 +187,40 @@ class LibroControlador:
 
     def crear_libro_web(self):
         """Maneja el formulario web para crear un libro (GET muestra formulario, POST lo procesa)"""
-        try:
+        # try:
             # Soporta edición: si viene edit_id en query params, cargar libro y prellenar
-            edit_id = request.args.get('edit_id') if request.method == 'GET' else request.form.get('edit_id')
-            if request.method == 'GET':
-                if edit_id:
-                    libro = self.app.obtenerLibro(edit_id)
-                    if libro:
-                        data = libro.__dict__
-                        return render_template('books/create.html', data=data)
-                return render_template('books/create.html')
-
-            # POST: procesar formulario
-            form = request.form.to_dict()
-
-            # Normalizar campos que deben ser enteros/booleanos/listas
-            if 'paginas' in form and form['paginas'] != '':
-                try:
-                    form['paginas'] = int(form['paginas'])
-                except ValueError:
-                    # dejar como string para que la validación lo capture
-                    pass
-            if 'año_publicacion' in form and form['año_publicacion'] != '':
-                try:
-                    form['año_publicacion'] = int(form['año_publicacion'])
-                except ValueError:
-                    pass
-            if 'disponible' in form:
-                form['disponible'] = form['disponible'].lower() in ['true', '1', 'on', 'yes']
-            # tags: aceptar coma-separado
-            if 'tags' in form and isinstance(form['tags'], str):
-                tags = [t.strip() for t in form['tags'].split(',') if t.strip()]
-                form['tags'] = tags
-
-            schema = LibroCreateSchema()
+        edit_id = request.args.get('edit_id') if request.method == 'GET' else request.form.get('edit_id')
+        if request.method == 'GET':
+            # Preload categorias, tags y generos para los selects
+            categorias = []
+            tags = []
+            generos = []
+            idiomas = []
+            paises = []
             try:
-                validated_data = schema.load(form)
-            except ValidationError as ve:
-                # Mostrar errores en la plantilla
-                errors = ve.messages
-                flash(f"Errores de validación: {errors}", 'warning')
-                # Renderizar el formulario con los datos ingresados y errores
-                return render_template('books/create.html', data=form, errors=errors)
+                categorias = [c.__dict__ for c in categoria_dep.categoria_app.obtenerCategorias()]
+            except Exception:
+                categorias = []
+            try:
+                tags = [t.__dict__ for t in tag_dep.tag_app.obtenerTags()]
+            except Exception:
+                tags = []
+            try:
+                generos = [g.__dict__ for g in genero_dep.genero_app.obtenerGeneros()]
+            except Exception:
+                generos = []
+            try:
+                idiomas = [i.__dict__ for i in idioma_dep.idioma_app.obtenerIdiomas()]
+            except Exception:
+                idiomas = []
+            try:
+                paises = [p.__dict__ for p in pais_dep.pais_app.obtenerPaises()]
+            except Exception:
+                paises = []
 
-            # Si viene edit_id en el formulario, actualizar
             if edit_id:
-                modified = self.app.actualizarLibro(edit_id, validated_data)
-                if modified and modified > 0:
-                    flash('Libro actualizado exitosamente', 'success')
-                else:
-                    flash('No se pudo actualizar el libro', 'warning')
-                return redirect(url_for('libro.lista_libros_web'))
-
-            # Crear libro usando la capa de aplicación
-            libro_id = self.app.crearLibro(validated_data)
-            flash('Libro creado exitosamente', 'success')
-            return redirect(url_for('libro.lista_libros_web'))
-
-        except Exception as e:
-            flash(f"Error al crear libro: {str(e)}", 'danger')
-            return render_template('books/create.html', data=request.form.to_dict())
+                libro = self.app.obtenerLibro(edit_id)
+                if libro:
+                    data = libro.__dict__
+                    return render_template('books/create.html', data=data, categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
+            return render_template('books/create.html', categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Idiomas{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Idiomas</h2>
+    <button class="btn btn-primary" id="btnNewIdioma">Agregar idioma</button>
+  </div>
+  <div class="mb-3 d-flex">
+    <input id="idiomasSearch" class="form-control me-2" placeholder="Buscar idiomas (mín 3 caracteres)..." />
+    <button id="idiomasSearchBtn" class="btn btn-outline-secondary">Buscar</button>
+  </div>
+
+  <div id="idiomasContainer">
+    {% if idiomas %}
+    <div class="list-group" id="idiomasList">
+      {% for p in idiomas %}
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ p._id }}">
+          <div>
+            <div class="fw-semibold">{{ p.nombre }}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditIdioma" data-id="{{ p._id }}" data-nombre="{{ p.nombre|e }}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger btnDeleteIdioma" data-id="{{ p._id }}" data-nombre="{{ p.nombre|e }}">Eliminar</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p id="noIdiomasMsg">No hay idiomas.</p>
+    {% endif %}
+  </div>
+
+  <div class="text-center my-3">
+    <button id="idiomasLoadMore" class="btn btn-outline-primary">Cargar más</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function(){
+
+    const modal = `
+    <div class="modal fade" id="idiomaModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="idiomaModalLabel">Nuevo idioma</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="idiomaForm">
+              <input type="hidden" name="edit_id" id="idioma_edit_id" />
+              <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input name="nombre" id="idioma_nombre" class="form-control" required />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button id="idiomaSave" type="submit" form="idiomaForm" class="btn btn-primary">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+
+    $('body').append(modal);
+    const idiomaModal = new bootstrap.Modal(document.getElementById('idiomaModal'));
+    $('#btnNewIdioma').click(function(){
+      $('#idiomaModalLabel').text('Nuevo idioma');
+      $('#idiomaForm')[0].reset();
+      $('#idioma_edit_id').val('');
+      idiomaModal.show();
+    });
+
+    $(document).on('click', '.btnEditIdioma', function(){
+      const id = $(this).data('id');
+      const nombre = $(this).data('nombre');
+      $('#idiomaModalLabel').text('Editar idioma');
+      $('#idioma_nombre').val(nombre);
+      $('#idioma_edit_id').val(id);
+      idiomaModal.show();
+    });
+
+    $('#idiomaForm').submit(function(e){
+      e.preventDefault();
+      const id = $('#idioma_edit_id').val();
+      const nombre = $('#idioma_nombre').val().trim();
+      if(!nombre){
+        alert('El nombre es requerido');
+        return;
+      }
+      const url = id ? '{{ url_for("idioma.actualizar_idioma", idioma_id="") }}' + id : '{{ url_for("idioma.crear_idioma") }}';
+      const method = id ? 'PUT' : 'POST';
+      $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify({ nombre }),
+        success: function(r){
+            if(!r.estado){
+                alert( 'Error en la operación');
+                return;
+            }
+            idiomaModal.hide();
+            alert('Idioma guardado');
+            location.reload();
+            },
+            error: function(jqXHR){
+                const j = jqXHR.responseJSON || {};
+                alert( 'Error en la operación');
+            }
+      })
+ 
+    });
+
+  });
+</script>
+<script>
+$(function(){
+  const apiUrl = '{{ url_for("idioma.obtener_idiomas") }}';
+  let offset = {{ (initial_limit | default(10)) | tojson }};
+  const limit = {{ (initial_limit | default(10)) | tojson }};
+  let q = '';
+
+  function appendIdioma(p){
+    const html = `
+      <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${p._id}">
+        <div>
+          <div class="fw-semibold">${p.nombre}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary btnEditIdioma" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Editar</button>
+          <button class="btn btn-sm btn-outline-danger btnDeleteIdioma" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
+        </div>
+      </div>`;
+    $('#idiomasList').append(html);
+  }
+
+  $('#idiomasLoadMore').on('click', function(){
+    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+      .done(function(r){
+        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+        const items = r.data.idiomas || [];
+        if(items.length === 0){ $('#idiomasLoadMore').prop('disabled', true).text('No hay más'); return; }
+        items.forEach(appendIdioma);
+        offset += items.length;
+      })
+      .fail(function(){ alert('Error al cargar más idiomas'); });
+  });
+
+  function performIdiomasSearch(){
+    const term = $('#idiomasSearch').val().trim();
+    if(term.length < 3) return;
+    q = term; offset = 0; $('#idiomasList').empty(); $('#idiomasLoadMore').prop('disabled', false).text('Cargar más');
+    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+      .done(function(r){
+        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+        const items = r.data.idiomas || [];
+        if(items.length === 0){ $('#noIdiomasMsg').show(); $('#idiomasLoadMore').prop('disabled', true).text('No hay más'); return; }
+        $('#noIdiomasMsg').hide(); items.forEach(appendIdioma); offset += items.length;
+      })
+      .fail(function(){ alert('Error en la búsqueda'); });
+  }
+
+  const debounce = (fn, wait) => { let t; return function(){ const args=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; };
+  const debouncedIdiomasSearch = debounce(performIdiomasSearch, 300);
+  $('#idiomasSearch').on('input', debouncedIdiomasSearch);
+  $('#idiomasSearchBtn').on('click', performIdiomasSearch);
+});
+</script>
+{% endblock %}

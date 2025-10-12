@@ -13,8 +13,20 @@ class TagApp:
     def obtenerTag(self, tag_id: str):
         return self.obtener_svc.ejecutar(tag_id)
 
-    def obtenerTags(self):
-        return self.obtener_svc.repo.obtenerTags()
+    def obtenerTags(self, offset: int = 0, limit: int = 10, q: str = None):
+        # Si hay búsqueda, delegar a método de búsqueda del servicio/repo si existe
+        if q:
+            # intentar método de búsqueda en el servicio
+            if hasattr(self.obtener_svc, 'buscarTags'):
+                return self.obtener_svc.buscarTags(q, offset=offset, limit=limit)
+            # fallback: traer todos y filtrar en memoria (no ideal)
+            all_tags = self.obtener_svc.repo.obtenerTags()
+            filtered = [t for t in all_tags if q.lower() in (t.nombre or '').lower()]
+            return filtered[offset:offset+limit]
+        # paginación directa si el repo lo soporta
+        if hasattr(self.obtener_svc.repo, 'obtenerTagsPaged'):
+            return self.obtener_svc.repo.obtenerTagsPaged(offset=offset, limit=limit)
+        return self.obtener_svc.repo.obtenerTags()[offset:offset+limit]
 
     def crearTag(self, tag):
         return self.crear_svc.ejecutar(tag)

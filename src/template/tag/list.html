@@ -9,24 +9,35 @@
     <button class="btn btn-primary" id="btnNewTag">Agregar tag</button>
   </div>
 
-  {% if tags %}
-  <div class="list-group">
-    {% for t in tags %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <div class="fw-semibold">{{ t.nombre }}</div>
-          <div class="text-muted small">{{ t.descripcion }}</div>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="{{ t._id }}" data-nombre="{{ t.nombre|e }}" data-descripcion="{{ t.descripcion|e }}">Editar</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="openConfirmDeleteTag('{{ t._id }}', '{{ t.nombre|e }}')">Eliminar</button>
-        </div>
-      </div>
-    {% endfor %}
+  <div class="mb-3 d-flex">
+    <input id="tagsSearch" class="form-control me-2" placeholder="Buscar tags (mín 3 caracteres)..." />
+    <button id="tagsSearchBtn" class="btn btn-outline-secondary">Buscar</button>
   </div>
-  {% else %}
-    <p>No hay tags.</p>
-  {% endif %}
+
+  <div id="tagsContainer">
+    {% if tags %}
+    <div class="list-group" id="tagsList">
+      {% for t in tags %}
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ t._id }}">
+          <div>
+            <div class="fw-semibold">{{ t.nombre }}</div>
+            <div class="text-muted small">{{ t.descripcion }}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="{{ t._id }}" data-nombre="{{ t.nombre|e }}" data-descripcion="{{ t.descripcion|e }}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger btnDeleteTag" data-id="{{ t._id }}" data-nombre="{{ t.nombre|e }}">Eliminar</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p id="noTagsMsg">No hay tags.</p>
+    {% endif %}
+  </div>
+
+  <div class="text-center my-3">
+    <button id="tagsLoadMore" class="btn btn-outline-primary">Cargar más</button>
+  </div>
 </div>
 {% endblock %}
 {% block extra_js %}
@@ -54,61 +65,152 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button id="tagSave" type="button" class="btn btn-primary">Guardar</button>
+          <button id="tagSave" type="submit" form="tagForm" class="btn btn-primary">Guardar</button>
         </div>
       </div>
     </div>
   </div>`;
 
-  document.body.insertAdjacentHTML('beforeend', tagModalHtml);
+  $('body').append(tagModalHtml);
 
-  const tagModal = new bootstrap.Modal(document.getElementById('tagModal'));
+  const tagModal = new bootstrap.Modal($('#tagModal')[0]);
 
-  document.getElementById('btnNewTag').addEventListener('click', ()=>{
-    document.getElementById('tagForm').reset();
-    document.getElementById('tag_edit_id').value = '';
-    document.getElementById('tagModalLabel').innerText = 'Nuevo tag';
+  $('#btnNewTag').on('click', function() {
+    $('#tagForm')[0].reset();
+    $('#tag_edit_id').val('');
+    $('#tagModalLabel').text('Nuevo tag');
     tagModal.show();
   });
 
-  document.querySelectorAll('.btnEditTag').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const id = btn.dataset.id;
-      const nombre = btn.dataset.nombre;
-      const descripcion = btn.dataset.descripcion;
-      document.getElementById('tag_edit_id').value = id;
-      document.getElementById('tag_nombre').value = nombre;
-      document.getElementById('tag_descripcion').value = descripcion;
-      document.getElementById('tagModalLabel').innerText = 'Editar tag';
-      tagModal.show();
+  $('.btnEditTag').on('click', function() {
+    const id = $(this).data('id');
+    const nombre = $(this).data('nombre');
+    const descripcion = $(this).data('descripcion');
+    $('#tag_edit_id').val(id);
+    $('#tag_nombre').val(nombre);
+    $('#tag_descripcion').val(descripcion);
+    $('#tagModalLabel').text('Editar tag');
+    tagModal.show();
+  });
+
+  $('#tagForm').on('submit', function(evt) {
+    evt.preventDefault();
+    const form = $(this);
+    const data = form.serializeArray();
+    const payload = {};
+    data.forEach(item => payload[item.name] = item.value);
+
+    let url, method;
+    if (!payload.edit_id) {
+      delete payload.edit_id;
+      url = `{{ url_for('tag.crear_tag') }}`;
+      method = 'POST';
+    } else {
+      const edit_id = payload.edit_id;
+      delete payload.edit_id;
+      url = `{{ url_for('tag.actualizar_tag', tag_id='') }}/${edit_id}`;
+      method = 'PUT';
+    }
+
+    $.ajax({
+      url: url,
+      method: method,
+      contentType: 'application/json',
+      data: JSON.stringify(payload)
+    })
+    .done(function(r) {
+      if (!r || !r.estado) {
+        alert(r?.msg || 'Error');
+        return;
+      }
+      tagModal.hide();
+      alert(r.msg || 'Operación exitosa');
+      location.reload();
+    })
+    .fail(function(jqXHR) {
+      const j = jqXHR.responseJSON || {};
+      alert(j.message || 'Error');
     });
   });
 
-  document.getElementById('tagSave').addEventListener('click', async (event)=>{
-    event.preventDefault();
-    const form = document.getElementById('tagForm');
-    const data = new FormData(form);
-    const payload = {};
-    data.forEach((v,k)=> payload[k]=v);
-    try{
-        let resp;
-        if(payload.edit_id===''){ delete payload.edit_id; 
-            resp = await fetch(`{{ url_for('tag.crear_tag') }}`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-        }else{
-            const edit_id = payload.edit_id; delete payload.edit_id;
-            resp = await fetch(`{{ url_for('tag.actualizar_tag', tag_id='') }}/${edit_id}`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-        }
+  $('.btnDeleteTag').on('click', function() {
+    const id = $(this).data('id');
+    const nombre = $(this).data('nombre');
+    if (!confirm(`Eliminar tag "${nombre}" ?`)) return;
 
-        const r = await resp.json().catch(()=>null);
-        if(resp.ok){ location.reload(); } else { alert(r?.message || 'Error'); }
-    }catch(e){ alert('Error: '+e); }
+    $.ajax({
+      url: `{{ url_for('tag.eliminar_tag', tag_id='') }}/${id}`,
+      method: 'DELETE'
+    })
+    .done(function() {
+      location.reload();
+    })
+    .fail(function(jqXHR) {
+      const j = jqXHR.responseJSON || {};
+      alert(j.message || 'Error');
+    });
   });
 
-  function openConfirmDeleteTag(id, nombre){
-    if(!confirm(`Eliminar tag "${nombre}" ?`)) return;
-    fetch(`{{ url_for('tag.eliminar_tag', tag_id='') }}/${id}`, { method: 'DELETE'}).then(async r=>{
-      if(r.ok) location.reload(); else { const j=await r.json().catch(()=>null); alert(j?.message||'Error'); }
-    }).catch(e=>alert('Error: '+e));
+  // Lazy load y buscador
+  const apiUrl = '{{ url_for("tag.obtener_tags") }}';
+  let offset = {{ (initial_limit | default(10)) | tojson }};
+  const limit = {{ (initial_limit | default(10)) | tojson }};
+  let q = '';
+
+  // Debounce helper
+  function debounce(fn, wait){
+    let t = null;
+    return function(){
+      const args = arguments;
+      const ctx = this;
+      clearTimeout(t);
+      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+    };
   }
+
+  function appendTag(t){
+    const html = `
+      <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${t._id}">
+        <div>
+          <div class="fw-semibold">${t.nombre}</div>
+          <div class="text-muted small">${t.descripcion || ''}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}" data-descripcion="${(t.descripcion||'').replace(/"/g,'\"')}">Editar</button>
+          <button class="btn btn-sm btn-outline-danger btnDeleteTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
+        </div>
+      </div>`;
+    $('#tagsList').append(html);
+  }
+
+  $('#tagsLoadMore').on('click', function(){
+    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+      .done(function(r){
+        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+        const items = r.data.tags || [];
+        if(items.length === 0){ $('#tagsLoadMore').prop('disabled', true).text('No hay más'); return; }
+        items.forEach(appendTag);
+        offset += items.length;
+      })
+      .fail(function(){ alert('Error al cargar más tags'); });
+  });
+
+  const performTagsSearch = function(){
+    const term = $('#tagsSearch').val().trim();
+    if(term.length < 3){ return; }
+    q = term; offset = 0; $('#tagsList').empty(); $('#tagsLoadMore').prop('disabled', false).text('Cargar más');
+    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+      .done(function(r){
+        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+        const items = r.data.tags || [];
+        if(items.length === 0){ $('#noTagsMsg').show(); $('#tagsLoadMore').prop('disabled', true).text('No hay más'); return; }
+        $('#noTagsMsg').hide(); items.forEach(appendTag); offset += items.length;
+      })
+      .fail(function(){ alert('Error en la búsqueda'); });
+  };
+
+  const debouncedTagsSearch = debounce(performTagsSearch, 300);
+  $('#tagsSearch').on('input', debouncedTagsSearch);
+  $('#tagsSearchBtn').on('click', performTagsSearch);
 </script>
 {% endblock %}

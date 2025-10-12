@@ -8,20 +8,25 @@
         <!-- Bootstrap 5 -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 CSS (global) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
         <style>
             :root{
                 --brand-1: #6f42c1; /* deep violet */
                 --brand-2: #42a5f5; /* sky blue */
                 --muted: #6c757d;
-                --sidebar-width: 250px;
+                --sidebar-width: 250px; /* fixed sidebar width */
             }
             body { background:#f8fafc; }
             .app-sidebar {
                 width: var(--sidebar-width);
+                max-width: var(--sidebar-width);
+                flex: 0 0 var(--sidebar-width);
                 min-height: 100vh;
                 background: linear-gradient(180deg, rgba(111,66,193,0.98) 0%, rgba(66,165,245,0.95) 100%);
                 color: #fff;
+                box-shadow: 0 6px 20px rgba(12,34,55,0.06);
             }
             .app-sidebar .nav-link { color: rgba(255,255,255,0.9); }
             .app-sidebar .nav-link.active { background: rgba(255,255,255,0.08); border-radius: .375rem; }
@@ -30,19 +35,65 @@
             .content { padding: 1.25rem; }
             .card-ghost { box-shadow: 0 6px 18px rgba(12, 34, 55, 0.06); border: none; }
             .footer-small { font-size: .85rem; color: var(--muted); }
+            /* Responsive behaviour: desktop = fixed sidebar with content offset; mobile = off-canvas */
+            @media (min-width: 992px){
+                .app-sidebar { position: fixed; left: 0; top: 0; bottom: 0; }
+                .flex-fill { margin-left: var(--sidebar-width); }
+                .content { padding: 1.25rem; }
+            }
+
             @media (max-width: 991px){
-                .app-sidebar { position: fixed; z-index: 1045; transform: translateX(-110%); transition: transform .25s ease; }
-                .app-sidebar.show { transform: translateX(0); }
+                .app-sidebar { position: fixed; left: -110%; top: 0; bottom: 0; z-index: 1060; transition: left .25s ease; }
+                .app-sidebar.show { left: 0; }
+                .sidebar-backdrop { display: none; }
+                .app-sidebar.show ~ .sidebar-backdrop { display: block; }
+                .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1050; }
                 .content { padding-top: 4.5rem; }
             }
+            /* Global form control sizing to provide a consistent look across templates */
+            .form-control, .form-select, textarea {
+                padding: .65rem .9rem;
+                font-size: 1rem;
+                line-height: 1.25;
+                border-radius: .5rem;
+                height: 46px;
+                box-sizing: border-box;
+            }
+            .input-group .form-control { height: 46px; padding-left: .75rem; }
+            .form-label.small { font-size: .85rem; }
+            /* Select2 compatibility */
+            /* Select2 compatibility + nicer design */
+            .select2-container { width: 100% !important; }
+            .select2-container--default .select2-selection--single {
+                height: 46px; padding: .25rem .6rem; border-radius: .5rem; border: 1px solid #dfe7ef; background: #fff;
+                box-shadow: 0 1px 2px rgba(16,24,40,0.03);
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 46px; color: #223; }
+            .select2-container--default .select2-selection--single .select2-selection__arrow { height: 46px; right: .35rem; }
+            .select2-container--default .select2-selection--multiple {
+                min-height: 46px; padding: .35rem .5rem; border-radius: .5rem; border: 1px solid #dfe7ef; background: #fff;
+                box-shadow: 0 1px 2px rgba(16,24,40,0.03);
+            }
+            /* Chips (selected items) */
+            .select2-container--default .select2-selection__choice {
+                background: #5b8def; color: #fff; border: none; padding: .25rem .5rem; margin: .15rem .25rem; border-radius: .375rem; font-size: .85rem;
+            }
+            .select2-container--default .select2-selection__choice__remove { color: rgba(255,255,255,0.9); margin-right: .35rem; }
+            /* Placeholder style */
+            .select2-container--default .select2-selection__placeholder { color: #6c757d; }
+            /* Dropdown panel */
+            .select2-container--open .select2-dropdown { box-shadow: 0 8px 30px rgba(30,50,80,0.08); border: 1px solid rgba(31,41,55,0.06); }
+            .select2-results__option--highlighted[aria-selected] { background: rgba(91,141,239,0.08); }
+         
+            /* Ensure small input-group icons align */
+            .input-group-text .bi { line-height: 1; font-size: 1.15rem; }
         </style>
-
         {% block extra_css %}{% endblock %}
     </head>
     <body>
         <div class="d-flex">
             <!-- Sidebar -->
-            <aside class="app-sidebar p-3 d-none d-lg-block">
+            <aside class="app-sidebar p-3" >
                 <div class="mb-4">
                     <a class="d-flex align-items-center text-decoration-none text-white" href="{{ url_for('dashboard') }}">
                         <i class="bi bi-journal-bookmark-fill fs-3 me-2"></i>
@@ -51,10 +102,13 @@
                 </div>
                 <nav class="nav flex-column">
                     <a class="nav-link mb-1 {% if request.path.startswith('/dashboard') %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/libro') %}active{% endif %}" href="{{ url_for('libro.lista_libros_web') }}"><i class="bi bi-book-half me-2"></i> Libros</a>
-                    <a class="nav-link mb-1" href="{{ url_for('libro.crear_libro_web') }}"><i class="bi bi-plus-circle me-2"></i> Agregar libro</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-tags me-2"></i> Categorías</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/tag') %}active{% endif %}" href="{{ url_for('tag.lista_tags_web') }}"><i class="bi bi-tags me-2"></i> Tags</a>
+                    <a class="nav-link mb-1 {% if request.path.startswith('/libro') %}active{% endif %}" href="{{ url_for('libro.lista_libros_web') }}"><i class="bi bi-book me-2"></i> Libros</a>
+                    <!-- <a class="nav-link mb-1" href="{{ url_for('libro.crear_libro_web') }}"><i class="bi bi-plus-circle me-2"></i> Agregar libro</a> -->
+                    <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-bookmarks me-2"></i> Categorías</a>
+                    <a class="nav-link mb-1 {% if request.path.startswith('/genero') %}active{% endif %}" href="{{ url_for('genero.lista_generos_web') }}"><i class="bi bi-collection me-2"></i> Géneros</a>
+                    <a class="nav-link mb-1 {% if request.path.startswith('/tag') %}active{% endif %}" href="{{ url_for('tag.lista_tags_web') }}"><i class="bi bi-tag me-2"></i> Tags</a>
+                    <a class="nav-link mb-1 {% if request.path.startswith('/idioma') %}active{% endif %}" href="{{ url_for('idioma.lista_idiomas_web') }}"><i class="bi bi-translate me-2"></i> Idiomas</a>
+                    <a class="nav-link mb-1 {% if request.path.startswith('/pais') %}active{% endif %}" href="{{ url_for('pais.lista_paises_web') }}"><i class="bi bi-globe me-2"></i> Países</a>
                     <a class="nav-link mb-1" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
                 </nav>
         
@@ -98,10 +152,70 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery + Select2 JS (global) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Select2 fallback: try alternative CDN if primary script didn't expose $.fn.select2 -->
+    <script>
+        (function(){
+            function loadScript(src, onload, onerror){
+                var s = document.createElement('script'); s.src = src; s.async = true;
+                s.onload = onload; s.onerror = onerror; document.head.appendChild(s);
+            }
+            function loadCss(href){
+                var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+            }
+
+            // If Select2 not available after a short delay, try fallback sources
+            setTimeout(function(){
+                try{
+                    if(typeof jQuery === 'undefined'){ console.warn('jQuery missing when checking Select2 fallback'); return; }
+                    if(typeof jQuery.fn !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined'){
+                        // already available
+                        console.debug('Select2 loaded from primary CDN');
+                        return;
+                    }
+                    console.warn('Select2 not found. Attempting fallback CDN (cdnjs).');
+                    // fallback CSS (cdnjs)
+                    loadCss('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css');
+                    // fallback JS (cdnjs)
+                    loadScript('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js', function(){
+                        console.debug('Select2 loaded from fallback CDN (cdnjs)');
+                    }, function(){
+                        console.warn('Select2 fallback CDN failed to load.');
+                    });
+                }catch(e){ console.warn('Select2 fallback check error', e); }
+            }, 250);
+        })();
+    </script>
         <script>
-            document.getElementById('sidebarToggle')?.addEventListener('click', function(){
-                document.querySelector('.app-sidebar')?.classList.toggle('show');
-            });
+            (function(){
+                const toggle = document.getElementById('sidebarToggle');
+                const sidebar = document.querySelector('.app-sidebar');
+                // create backdrop element for mobile
+                let backdrop = document.querySelector('.sidebar-backdrop');
+                if(!backdrop){
+                    backdrop = document.createElement('div');
+                    backdrop.className = 'sidebar-backdrop';
+                    document.body.appendChild(backdrop);
+                }
+
+                function showSidebar(){ sidebar.classList.add('show'); backdrop.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+                function hideSidebar(){ sidebar.classList.remove('show'); backdrop.style.display = 'none'; document.body.style.overflow = ''; }
+
+                toggle?.addEventListener('click', function(){
+                    if(window.innerWidth < 992){
+                        if(sidebar.classList.contains('show')) hideSidebar(); else showSidebar();
+                    } else {
+                        sidebar.classList.toggle('collapsed');
+                        // for desktop collapse we can shrink sidebar (handled by CSS if needed)
+                    }
+                });
+
+                backdrop.addEventListener('click', hideSidebar);
+                // Hide sidebar on resize to desktop state
+                window.addEventListener('resize', function(){ if(window.innerWidth >= 992){ hideSidebar(); } });
+            })();
         </script>
             <!-- Global URL templates for JS (replace __ID__ with real id) -->
             <script>
@@ -112,12 +226,10 @@
                 };
 
                 // Modal helpers
-                async function openDetailModal(id){
-                    try{
-                        const url = RECOM_URLS.get.replace('__ID__', id);
-                        const resp = await fetch(url);
-                        const data = await resp.json();
-                        // If API returns wrapped ResponseApi, try to extract
+                function openDetailModal(id){
+                    const url = RECOM_URLS.get.replace('__ID__', id);
+                    $.getJSON(url)
+                      .done(function(data){
                         const payload = data?.data || data;
                         const libro = payload?.libro || payload;
                         const body = document.getElementById('modalDetailBody');
@@ -134,23 +246,20 @@
                         }
                         const modal = new bootstrap.Modal(document.getElementById('modalDetail'));
                         modal.show();
-                    }catch(err){
-                        alert('Error cargando detalles: ' + err);
-                    }
+                      })
+                      .fail(function(jqXHR, textStatus, err){ alert('Error cargando detalles: ' + (err||textStatus)); });
                 }
 
                 function openConfirmDelete(id, title){
                     document.getElementById('confirmModalTitle').innerText = `Eliminar libro`;
                     document.getElementById('confirmModalBody').innerText = `¿Deseas eliminar "${title}"? Esta acción se puede revertir.`;
                     const btn = document.getElementById('confirmModalBtn');
-                    btn.onclick = async function(){
+                    btn.onclick = function(){
                         btn.disabled = true;
-                        try{
-                            const resp = await fetch(RECOM_URLS.delete.replace('__ID__', id), { method: 'POST' });
-                            const data = await resp.json().catch(()=>null);
-                            if(resp.ok){ location.reload(); } else { alert(data?.message || 'Error al eliminar'); }
-                        }catch(e){ alert('Error: '+e); }
-                        btn.disabled = false;
+                        $.post(RECOM_URLS.delete.replace('__ID__', id))
+                          .done(function(){ location.reload(); })
+                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al eliminar'); })
+                          .always(function(){ btn.disabled = false; });
                     };
                     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
                     modal.show();
@@ -158,14 +267,12 @@
 
                 function openRateModal(id, title){
                     document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
-                    document.getElementById('rateSubmit').onclick = async function(){
+                    document.getElementById('rateSubmit').onclick = function(){
                         const val = parseFloat(document.getElementById('rateValue').value);
                         if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                        try{
-                            const resp = await fetch(RECOM_URLS.rate.replace('__ID__', id), { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({calificacion: val}) });
-                            const data = await resp.json().catch(()=>null);
-                            if(resp.ok){ location.reload(); } else { alert(data?.message || 'Error al calificar'); }
-                        }catch(e){ alert('Error: '+e); }
+                        $.ajax({ url: RECOM_URLS.rate.replace('__ID__', id), method: 'POST', contentType: 'application/json', data: JSON.stringify({calificacion: val}) })
+                          .done(function(){ location.reload(); })
+                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al calificar'); });
                     };
                     const modal = new bootstrap.Modal(document.getElementById('rateModal'));
                     modal.show();

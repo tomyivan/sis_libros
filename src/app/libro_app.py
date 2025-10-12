@@ -21,33 +21,36 @@ class LibroApp:
         """Obtener un libro por ID"""
         return self.obtener_libro_srv.obtenerLibro(libro_id)
 
-    def obtenerLibros(self, filtros: dict = None) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener lista de libros con filtros opcionales"""
+    def obtenerLibros(self, filtros: dict = None, offset: int = 0, limit: int = 10, q: str = None) -> List[libro_mod.LibroModeloDTO]:
+        """Obtener lista de libros con filtros opcionales, paginación y búsqueda.
+        Preferimos pasar offset/limit al servicio/repo para que use skip/limit en la BD.
+        Si la búsqueda (q) se realiza por un método que no soporta paginación, se hace
+        slicing en esta capa como fallback.
+        """
         if filtros:
             filtro = libro_mod.FiltroLibroModelo(**filtros)
         else:
             filtro = None
-        return self.obtener_libro_srv.obtenerLibros(filtro)
 
-    def buscarLibros(self, texto_busqueda: str) -> List[libro_mod.LibroModeloDTO]:
-        """Buscar libros por texto"""
-        return self.obtener_libro_srv.buscarLibros(texto_busqueda)
+        # Si hay término de búsqueda, delegar a buscarLibros (repo puede o no soportar paginación)
+        if q:
+            resultados = self.obtener_libro_srv.buscarLibros(q)
+            # fallback: si buscarLibros devuelve lista completa, aplicar slicing aquí
+            try:
+                start = max(0, int(offset))
+            except Exception:
+                start = 0
+            try:
+                lim = max(1, int(limit))
+            except Exception:
+                lim = 10
+            end = start + lim
+            return resultados[start:end]
+        
+        # No búsqueda textual: pasar offset/limit al servicio para que lo propague al repositorio
+        return self.obtener_libro_srv.obtenerLibros(filtro, offset=offset, limit=limit)
 
-    def obtenerLibrosPorGenero(self, genero: str) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por género"""
-        return self.obtener_libro_srv.obtenerLibrosPorGenero(genero)
 
-    def obtenerLibrosPorAutor(self, autor: str) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por autor"""
-        return self.obtener_libro_srv.obtenerLibrosPorAutor(autor)
-
-    def obtenerLibrosPorAño(self, año_min: int = None, año_max: int = None) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por rango de años"""
-        return self.obtener_libro_srv.obtenerLibrosPorAño(año_min, año_max)
-
-    def obtenerLibrosMejorCalificados(self, limite: int = 10) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros mejor calificados"""
-        return self.obtener_libro_srv.obtenerLibrosMejorCalificados(limite)
 
     # Operaciones de modificación
     def crearLibro(self, libro_data: dict) -> str:
@@ -70,39 +73,3 @@ class LibroApp:
         """Reactivar un libro previamente eliminado"""
         return self.eliminar_libro_srv.reactivarLibro(libro_id)
 
-    # Operaciones estadísticas
-    def obtenerEstadisticasLibros(self) -> dict:
-        """Obtener estadísticas generales de libros"""
-        todos_libros = self.obtener_libro_srv.obtenerLibros()
-        libros_activos = [l for l in todos_libros if l.disponible]
-        
-        if not todos_libros:
-            return {
-                "total_libros": 0,
-                "libros_activos": 0,
-                "libros_inactivos": 0,
-                "generos_unicos": 0,
-                "autores_unicos": 0,
-                "calificacion_promedio_general": 0.0,
-                "año_publicacion_min": None,
-                "año_publicacion_max": None
-            }
-        
-        generos = set(libro.genero for libro in libros_activos)
-        autores = set(libro.autor for libro in libros_activos)
-        
-        calificaciones = [l.calificacion_promedio for l in libros_activos if l.calificacion_promedio > 0]
-        calificacion_promedio_general = sum(calificaciones) / len(calificaciones) if calificaciones else 0.0
-        
-        años = [l.año_publicacion for l in libros_activos]
-        
-        return {
-            "total_libros": len(todos_libros),
-            "libros_activos": len(libros_activos),
-            "libros_inactivos": len(todos_libros) - len(libros_activos),
-            "generos_unicos": len(generos),
-            "autores_unicos": len(autores),
-            "calificacion_promedio_general": round(calificacion_promedio_general, 2),
-            "año_publicacion_min": min(años) if años else None,
-            "año_publicacion_max": max(años) if años else None
-        }

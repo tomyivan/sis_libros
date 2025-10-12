@@ -1,6 +1,8 @@
+from typing import Optional
 from src.dominio.puertos import usuario_prt
 from src.dominio.servicios.usuario import crearUsuario_srv, obtenerUsuario_srv, autenticar_srv
 from src.dominio.modelos import usuario_mod, auth_mod
+
 class UsuarioApp:
     def __init__(self, repositorio: usuario_prt.UsuarioPuerto,
                  crearUsuarioSrv: crearUsuario_srv.CrearUsuarioServicio,
@@ -11,7 +13,7 @@ class UsuarioApp:
         self.crearUsuarioSrv = crearUsuarioSrv
         self.obtenerUsuarioSrv = obtenerUsuarioSrv
         self.autenticarSrv = autenticarSrv
-    def obtenerUsuario(self, idUsuario: int) -> dict | None:
+    def obtenerUsuario(self, idUsuario: int) -> Optional[dict]:
         return self.obtenerUsuarioSrv.obtenerUsuario({"_id": idUsuario})
         
     def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo):
@@ -23,5 +25,5 @@ class UsuarioApp:
     def desactivarUsuario(self, idUsuario: int):
         return self.repositorio.desactivarUsuario(idUsuario)
 
-    def autenticarUsuario(self, alias: str, password: str) -> auth_mod.AuthModelo | None:
+    def autenticarUsuario(self, alias: str, password: str) -> Optional[auth_mod.AuthModelo]:
         return self.autenticarSrv.autenticar(alias, password)

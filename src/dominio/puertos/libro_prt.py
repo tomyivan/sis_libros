@@ -10,8 +10,8 @@ class LibroPuerto(ABC):
         pass
 
     @abstractmethod
-    def obtenerLibros(self, filtro: FiltroLibroModelo) -> List[LibroModeloDTO]:
-        """Obtener lista de libros según filtros"""
+    def obtenerLibros(self, filtro: FiltroLibroModelo, offset: int = None, limit: int = None) -> List[LibroModeloDTO]:
+        """Obtener lista de libros según filtros con soporte opcional de paginación (offset/limit)."""
         pass
 
     @abstractmethod
@@ -29,17 +29,3 @@ class LibroPuerto(ABC):
         """Eliminar/desactivar un libro"""
         pass
     
-    @abstractmethod
-    def buscarLibrosPorTexto(self, texto: str) -> List[LibroModeloDTO]:
-        """Buscar libros por texto en título, autor o descripción"""
-        pass
-    
-    @abstractmethod
-    def obtenerLibrosPorGenero(self, genero: str) -> List[LibroModeloDTO]:
-        """Obtener libros por género específico"""
-        pass
-    
-    @abstractmethod
-    def obtenerLibrosPorAutor(self, autor: str) -> List[LibroModeloDTO]:
-        """Obtener libros por autor específico"""
-        pass

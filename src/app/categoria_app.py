@@ -13,8 +13,16 @@ class CategoriaApp:
     def obtenerCategoria(self, categoria_id: str):
         return self.obtener_svc.ejecutar(categoria_id)
 
-    def obtenerCategorias(self):
-        return self.obtener_svc.repo.obtenerCategorias()
+    def obtenerCategorias(self, offset: int = 0, limit: int = 10, q: str = None):
+        if q:
+            if hasattr(self.obtener_svc, 'buscarCategorias'):
+                return self.obtener_svc.buscarCategorias(q, offset=offset, limit=limit)
+            all_items = self.obtener_svc.repo.obtenerCategorias()
+            filtered = [c for c in all_items if q.lower() in (c.nombre or '').lower()]
+            return filtered[offset:offset+limit]
+        if hasattr(self.obtener_svc.repo, 'obtenerCategoriasPaged'):
+            return self.obtener_svc.repo.obtenerCategoriasPaged(offset=offset, limit=limit)
+        return self.obtener_svc.repo.obtenerCategorias()[offset:offset+limit]
 
     def crearCategoria(self, categoria):
         return self.crear_svc.ejecutar(categoria)

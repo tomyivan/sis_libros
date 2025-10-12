@@ -1,91 +1,149 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar Sesión - Sistema de Recomendación de Libros</title>
 
-{% block title %}Iniciar Sesión - Sistema de Recomendación de Libros{% endblock %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-{% block body_class %}bg-gradient-primary{% endblock %}
-
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-md-6 col-lg-5">
-            <div class="card card-signin">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <i class="bi bi-book-fill text-primary" style="font-size: 3rem;"></i>
-                        <h1 class="h3 mt-3 mb-2 font-weight-normal">Sistema de Recomendación</h1>
-                        <p class="text-muted">Ingresa tus credenciales para acceder</p>
-                    </div>
-
-                    <!-- Mostrar mensajes flash -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <form id="loginForm" method="POST">
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="alias" name="alias" placeholder="Usuario" required>
-                            <label for="alias">Alias de Usuario</label>
-                        </div>
-                        
-                        <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
-                            <label for="password">Contraseña</label>
-                        </div>
-
-                        <div class="d-grid">
-                            <button class="btn btn-primary btn-signin btn-lg" type="submit">
-                                <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
-                                <span id="loginText">Iniciar Sesión</span>
-                            </button>
-                        </div>
-                    </form>
-
-                    <div class="text-center mt-4">
-                        <small class="text-muted">¿No tienes cuenta? Contacta al administrador</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    const spinner = document.getElementById('loginSpinner');
-    const text = document.getElementById('loginText');
-    const button = e.target.querySelector('button[type="submit"]');
-    
-    // Mostrar spinner
-    spinner.classList.remove('d-none');
-    text.textContent = 'Iniciando sesión...';
-    button.disabled = true;
-    
-    // Si hay algún error, restaurar el botón después de 3 segundos
-    setTimeout(() => {
-        spinner.classList.add('d-none');
-        text.textContent = 'Iniciar Sesión';
-        button.disabled = false;
-    }, 3000);
-});
-
-// Auto-hide alerts after 5 seconds
-setTimeout(() => {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        if (alert) {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
+    <style>
+        :root{--accent:#4f46e5;--glass:rgba(255,255,255,0.06)}
+        html,body{height:100%;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+        body{
+            margin:0;
+            background: linear-gradient(135deg,#0f172a 0%, #0f172a 40%, #071026 100%);
+            color: #e6eef8;
+            overflow:hidden;
         }
-    });
-}, 5000);
-</script>
-{% endblock %}
+        /* animated subtle gradient shapes */
+        .bg-shape{
+            position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.45;background:
+                radial-gradient(600px 400px at 10% 20%, rgba(79,70,229,0.18), transparent 15%),
+                radial-gradient(500px 350px at 90% 80%, rgba(14,165,233,0.12), transparent 12%),
+                linear-gradient(180deg, rgba(7,10,25,0.65), rgba(7,10,25,0.85));
+            background-size: 120% 120%;
+            animation: floatBg 12s ease-in-out infinite alternate;
+        }
+        @keyframes floatBg{from{background-position:0% 0%}to{background-position:100% 100%}}
+
+        .center-wrap{position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+        .card-glass{
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+            border-radius: 14px;
+            padding: 2rem;
+            width: 420px;
+            max-width: calc(100% - 2rem);
+        }
+        .brand-icon{
+            width:64px;height:64px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;background:linear-gradient(135deg,var(--accent),#06b6d4);color:white;font-size:1.9rem;box-shadow:0 8px 20px rgba(79,70,229,0.2);transform-origin:center;animation:iconPop 1.6s ease-in-out infinite;
+        }
+        @keyframes iconPop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+        h1.h3{color:#e6eef8;font-weight:700}
+        .muted-lite{color:rgba(230,238,248,0.75)}
+        .form-control:focus{box-shadow:0 6px 18px rgba(79,70,229,0.08);border-color:rgba(79,70,229,0.6)}
+        .btn-primary{background:linear-gradient(90deg,var(--accent),#06b6d4);border:none}
+        .btn-primary:disabled{opacity:0.7}
+        .btn-signin{padding: .7rem 1rem;font-weight:600;border-radius:10px}
+        .alert{border-radius:10px}
+        .helper{font-size:.9rem;color:rgba(230,238,248,0.7)}
+        footer.small{color:rgba(230,238,248,0.45);text-align:center;margin-top:1rem}
+    </style>
+</head>
+<body>
+    <div class="bg-shape" aria-hidden="true"></div>
+
+    <main class="center-wrap">
+        <div class="card-glass">
+            <div class="text-center mb-3">
+                <div class="brand-icon mx-auto mb-3">
+                    <i class="bi bi-book-half" style="font-size:1.4rem"></i>
+                </div>
+                <h1 class="h3 mb-1">Sistema de Recomendación</h1>
+                <p class="muted-lite">Ingresa tus credenciales para acceder</p>
+            </div>
+
+            <!-- Mostrar mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form id="loginForm" method="POST" novalidate>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="alias" name="alias" placeholder="Usuario" required>
+                    <label for="alias">Alias de Usuario</label>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
+                    <label for="password">Contraseña</label>
+                </div>
+
+                <div class="d-grid mb-2">
+                    <button class="btn btn-primary btn-signin btn-lg" type="submit">
+                        <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                        <span id="loginText">Iniciar Sesión</span>
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="helper">¿No tienes cuenta? Contacta al administrador</small>
+                    <a href="#" class="helper">Recuperar contraseña</a>
+                </div>
+            </form>
+
+            <footer class="small">© {{ config.APP_NAME if config is defined else 'SisLibros' }}{% if current_year is defined %} - {{ current_year }}{% endif %}</footer>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    // spinner + disable button behaviour
+    const form = document.getElementById('loginForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const spinner = document.getElementById('loginSpinner');
+            const text = document.getElementById('loginText');
+            const button = e.target.querySelector('button[type="submit"]');
+            // Mostrar spinner
+            spinner.classList.remove('d-none');
+            text.textContent = 'Iniciando sesión...';
+            button.disabled = true;
+            // límite visual si algo falla en backend
+            setTimeout(() => {
+                spinner.classList.add('d-none');
+                text.textContent = 'Iniciar Sesión';
+                button.disabled = false;
+            }, 5000);
+        });
+    }
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert) {
+                try { const bsAlert = new bootstrap.Alert(alert); bsAlert.close(); } catch(e) { /* ignore */ }
+            }
+        });
+    }, 5000);
+    </script>
+</body>
+</html>

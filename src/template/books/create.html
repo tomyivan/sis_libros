@@ -13,6 +13,8 @@
   .needs-validation .is-invalid{ box-shadow: none; }
   @media (prefers-reduced-motion: reduce){ .animate-card{ transition: none; } }
 </style>
+<!-- Select2 CSS -->
+<!-- Select2 CSS moved to base.html -->
 {% endblock %}
 
 {% block content %}
@@ -43,7 +45,8 @@
             </div>
           {% endif %}
 
-          <form id="bookForm" method="post" action="{{ url_for('libro.crear_libro_web') }}" class="row g-3 needs-validation" novalidate>
+          <form id="bookForm" 
+                        class="row g-3 needs-validation" novalidate>
             <input type="hidden" name="edit_id" id="book_edit_id" value="{{ request.args.get('edit_id', '') }}" />
 
             <div class="col-md-6">
@@ -70,7 +73,15 @@
 
             <div class="col-md-4">
               <label class="form-label small">Género</label>
-              <input name="genero" id="genero" class="form-control {% if errors and errors.get('genero') %}is-invalid{% endif %}" placeholder="Ficción, Historia..." required value="{{ data.genero if data else '' }}" />
+              <select id="genero_select" multiple class="form-select {% if errors and errors.get('genero') %}is-invalid{% endif %}" aria-label="Selecciona géneros">
+                {% if generos %}
+                  {% for g in generos %}
+                    <option value="{{ g.nombre }}" {% if data and data.genero and (g.nombre in (data.genero.split(',') if data.genero else [])) %}selected{% endif %}>{{ g.nombre }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+              <input type="hidden" name="genero" id="genero" value="{{ data.genero if data else '' }}" required />
+              <small class="form-text text-muted">Puedes seleccionar varios géneros (Ctrl/Cmd + clic).</small>
             </div>
 
             <div class="col-md-4">
@@ -88,9 +99,16 @@
               <input name="editorial" id="editorial" class="form-control" placeholder="Editorial" required value="{{ data.editorial if data else '' }}" />
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label small">Idioma</label>
-              <input name="idioma" id="idioma" class="form-control" placeholder="Español" required value="{{ data.idioma if data else '' }}" />
+              <select name="idioma" id="idioma_select" class="form-select" required>
+                <option value="">Selecciona un idioma...</option>
+                {% if idiomas %}
+                  {% for i in idiomas %}
+                    <option value="{{ i.nombre }}" {% if data and data.idioma == i.nombre %}selected{% endif %}>{{ i.nombre }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
             </div>
 
             <div class="col-12">
@@ -98,9 +116,41 @@
               <input name="isbn" id="isbn" class="form-control" placeholder="978-..." value="{{ data.isbn if data else '' }}" />
             </div>
 
-            <div class="col-12">
-              <label class="form-label small">Origen (país)</label>
-              <input name="origen_pais" id="origen_pais" class="form-control" placeholder="País de origen" required value="{{ data.origen_pais if data else '' }}" />
+            <div class="col-md-4">
+              <label class="form-label small">País de origen</label>
+              <select name="origen_pais" id="origen_select" class="form-select" required>
+                <option value="">Selecciona un país...</option>
+                {% if paises %}
+                  {% for p in paises|sort(attribute='nombre') %}
+                    <option value="{{ p.nombre }}" {% if data and data.origen_pais == p.nombre %}selected{% endif %}>{{ p.nombre }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Categoría</label>
+              <select name="categoria" id="categoria_select" class="form-select">
+                <option value="">Sin categoría</option>
+                {% if categorias %}
+                  {% for c in categorias %}
+                    <option value="{{ c.nombre }}" {% if data and data.get('categoria') == c.nombre %}selected{% endif %}>{{ c.nombre }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Tags</label>
+              <select id="tags_select" multiple class="form-select">
+                {% if tags %}
+                  {% for t in tags %}
+                    <option value="{{ t.nombre }}" {% if data and data.get('tags') and (t.nombre in data.get('tags')) %}selected{% endif %}>{{ t.nombre }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+              <input type="hidden" name="tags" id="tags" value="{% if data and data.get('tags') %}{{ data.get('tags')|join(',') }}{% endif %}" />
+              <small class="form-text text-muted">Selecciona los tags relevantes (Ctrl/Cmd + clic).</small>
             </div>
 
             <div class="col-12">
@@ -110,7 +160,7 @@
 
             <div class="col-12 d-flex justify-content-end gap-2 mt-2">
               <a href="{{ url_for('libro.lista_libros_web') }}" class="btn btn-outline-secondary">Cancelar</a>
-              <button id="bookSave" class="btn btn-primary btn-lg px-4">
+              <button id="bookSave" class="btn btn-primary btn-lg px-4" type="submit">
                 <span id="bookSpinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
                 <span id="bookSaveText">Guardar</span>
               </button>
@@ -125,39 +175,201 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-// Bootstrap validation + submit spinner
-(() => {
-  const form = document.getElementById('bookForm');
-  const saveBtn = document.getElementById('bookSave');
-  const spinner = document.getElementById('bookSpinner');
-  const saveText = document.getElementById('bookSaveText');
+// Bootstrap validation + submit spinner (jQuery)
+$(function(){
+  // initSelect2: initialize Select2 widgets used on this page. Exposed globally so other scripts can call it.
+  function initSelect2_local(){
+    try{
+      if(typeof window.$ === 'undefined' || !window.$) return;
+      if(!$.fn || !$.fn.select2) return;
 
-  if (!form) return;
+      var $g = $('#genero_select'); if ($g.length && !$g.data('select2')) $g.select2({placeholder:'Selecciona géneros', width:'100%'});
+      var $t = $('#tags_select'); if ($t.length && !$t.data('select2')) $t.select2({tags:true, tokenSeparators:[','], width:'100%'});
+      var $i = $('#idioma_select'); if ($i.length && !$i.data('select2')) $i.select2({placeholder:'Selecciona un idioma', width:'100%'});
+      var $c = $('#categoria_select'); if ($c.length && !$c.data('select2')) $c.select2({placeholder:'Selecciona una categoría', allowClear:true, width:'100%'});
+      var $p = $('#origen_select'); if ($p.length && !$p.data('select2')) $p.select2({placeholder:'Selecciona un país', width:'100%'});
+    }catch(e){ console.warn('initSelect2_local error', e); }
+  }
+  // Expose globally
+  try{ window.initSelect2 = initSelect2_local; }catch(e){ /* ignore */ }
 
-  form.addEventListener('submit', function (e) {
-    if (!form.checkValidity()) {
-      e.preventDefault();
-      e.stopPropagation();
-      form.classList.add('was-validated');
-      return;
+  var $form = $('#bookForm');
+  var $saveBtn = $('#bookSave');
+  var $spinner = $('#bookSpinner');
+  var $saveText = $('#bookSaveText');
+
+  var $generoSelect = $('#genero_select');
+  var $generoHidden = $('#genero');
+  var $tagsSelect = $('#tags_select');
+  var $tagsHidden = $('#tags');
+  var $idiomaSelect = $('#idioma_select');
+  var $paisSelect = $('#origen_select');
+  var $categoriaSelect = $('#categoria_select');
+
+  // Ensure initSelect2 is available; call it on ready (may be defined in other scripts)
+  if (typeof window.initSelect2 === 'function') window.initSelect2();
+
+  if (!$form.length) return;
+
+  $form.on('submit', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+
+    // clear previous validation state
+    $form.find('.is-invalid').removeClass('is-invalid');
+    $form.find('.invalid-feedback.ajax-error').remove();
+    $('.ajax-top-alert').remove();
+
+    // serialize multiselects into hidden inputs (use Select2 API when available)
+    if ($generoHidden.length){
+      var vals = [];
+      try{ vals = $generoSelect.val() || []; }catch(err){ vals = $generoSelect.find('option:selected').map(function(){ return this.value; }).get(); }
+      $generoHidden.val($.isArray(vals) ? vals.filter(Boolean).join(',') : [vals].filter(Boolean).join(','));
     }
+    if ($tagsHidden.length){
+      var tvals = [];
+      try{ tvals = $tagsSelect.val() || []; }catch(err){ tvals = $tagsSelect.find('option:selected').map(function(){ return this.value; }).get(); }
+      $tagsHidden.val($.isArray(tvals) ? tvals.filter(Boolean).join(',') : [tvals].filter(Boolean).join(','));
+    }
+
+    // HTML5 validation client-side
+    if (this.checkValidity && !this.checkValidity()){
+      $form.addClass('was-validated');
+      return false;
+    }
+
+    // prepare JSON payload
+    function toInt(v){ var n = parseInt(v); return isNaN(n) ? null : n; }
+    function toList(csv){ if(!csv) return []; return csv.split(',').map(function(x){ return x.trim(); }).filter(Boolean); }
+
+    var payload = {
+      titulo: $('#titulo').val(),
+      autor: $('#autor').val(),
+      genero: $('#genero').val() || '',
+      año_publicacion: toInt($('#anio').val()),
+      editorial: $('#editorial').val(),
+      isbn: $('#isbn').val(),
+      paginas: toInt($('#paginas').val()),
+      idioma: $('#idioma_select').val() || '',
+      categoria: $('#categoria_select').val() || '',
+      descripcion: $('#descripcion').val(),
+      origen_pais: $('#origen_select').val() || '',
+      disponible: true,
+      tags: toList($('#tags').val())
+    };
 
     // disable button to prevent double submit
-    if (saveBtn) {
-      saveBtn.disabled = true;
-      spinner.classList.remove('d-none');
-      saveText.textContent = 'Guardando...';
+    if ($saveBtn.length){
+      $saveBtn.prop('disabled', true);
+      $spinner.removeClass('d-none');
+      $saveText.text('Guardando...');
     }
-  }, false);
-})();
+
+    var postUrl = "{{ url_for('libro.crear_libro_web_post') }}"; // posts to web wrapper which calls API create
+
+    $.ajax({
+      url: postUrl,
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      dataType: 'json'
+    }).done(function(res, textStatus, jqXHR){
+      var body = res && (res.data || res.msg || res) || {};
+      // success: show flash and redirect to list
+      var redirectUrl = "{{ url_for('libro.lista_libros_web') }}";
+      // show a temporary alert and redirect
+      var $alert = $('<div class="alert alert-success ajax-top-alert" role="alert">Libro creado correctamente. Redirigiendo...</div>');
+      $form.before($alert);
+      setTimeout(function(){ window.location.href = redirectUrl; }, 800);
+    }).fail(function(jqXHR, textStatus){
+      var res = jqXHR.responseJSON || {};
+      var msg = res.msg || res.data || jqXHR.responseText || 'Error en el servidor';
+      // Try to extract validation details if present
+      var details = null;
+      try{
+        // sometimes msg contains a serialized object like "Error de validación: {'titulo': ['...']}"
+        if(typeof msg === 'string' && msg.indexOf('{') !== -1){
+          var start = msg.indexOf('{');
+          var jsonPart = msg.substring(start);
+          details = JSON.parse(jsonPart.replace(/'/g, '"'));
+        } else if (res.data && typeof res.data === 'object'){
+          details = res.data;
+        } else if (res.msg && typeof res.msg === 'object'){
+          details = res.msg;
+        }
+      }catch(e){ details = null; }
+
+      if(details && typeof details === 'object'){
+        // show inline errors
+        Object.keys(details).forEach(function(field){
+          var selector = null;
+          // map validation keys to form field selectors
+          if(field === 'titulo') selector = '#titulo';
+          else if(field === 'autor') selector = '#autor';
+          else if(field === 'genero') selector = '#genero';
+          else if(field === 'año_publicacion' || field === 'año' || field === 'anio') selector = '#anio';
+          else if(field === 'editorial') selector = '#editorial';
+          else if(field === 'isbn') selector = '#isbn';
+          else if(field === 'paginas') selector = '#paginas';
+          else if(field === 'idioma') selector = '#idioma_select';
+          else if(field === 'categoria') selector = '#categoria_select';
+          else if(field === 'descripcion') selector = '#descripcion';
+          else if(field === 'origen_pais') selector = '#origen_select';
+          else if(field === 'tags') selector = '#tags';
+
+          var messages = details[field];
+          var text = Array.isArray(messages) ? messages.join(', ') : String(messages);
+          if(selector){
+            var $el = $(selector);
+            $el.addClass('is-invalid');
+            $('<div class="invalid-feedback ajax-error">').text(text).insertAfter($el);
+          }
+        });
+        // also show top alert
+        var $top = $('<div class="alert alert-danger ajax-top-alert" role="alert">Por favor corrige los errores del formulario.</div>');
+        $form.before($top);
+      } else {
+        // generic error
+        var $top = $('<div class="alert alert-danger ajax-top-alert" role="alert">'+ (typeof msg === 'string' ? msg : 'Error al crear libro') +'</div>');
+        $form.before($top);
+      }
+    }).always(function(){
+      if ($saveBtn.length){ $saveBtn.prop('disabled', false); $spinner.addClass('d-none'); $saveText.text('Guardar'); }
+    });
+
+    return false;
+  });
+});
 </script>
 <script>
-// entrance animation for the card
-(() => {
-  const card = document.querySelector('.animate-card');
-  if (!card) return;
-  // Allow CSS to render then add class
-  requestAnimationFrame(()=> setTimeout(()=> card.classList.add('show'), 60));
-})();
+// Initialize Select2 for server-rendered idioma/pais options
+$(function(){ if (typeof initSelect2 === 'function') initSelect2(); });
+</script>
+<script>
+// entrance animation for the card (jQuery)
+$(function(){
+  var $card = $('.animate-card');
+  if (!$card.length) return;
+  setTimeout(function(){ $card.addClass('show'); }, 60);
+});
+</script>
+<script>
+// Defensive Select2 check and forced init (helps when plugin loads but selects were not initialized)
+$(function(){
+  try{
+    if(typeof $.fn === 'undefined' || typeof $.fn.select2 === 'undefined'){
+      console.warn('Select2 not detected on page. Ensure select2 JS is loaded.');
+      return;
+    }
+    // Force-init commonly used selects. This will re-init even if data('select2') check failed earlier.
+    var ids = ['#genero_select','#tags_select','#idioma_select','#categoria_select','#origen_select'];
+    ids.forEach(function(sel){
+      try{
+        var $s = $(sel);
+        if($s.length){ $s.select2({ width: '100%' , placeholder: $s.attr('placeholder') || undefined, tags: sel==='#tags_select' ? true : undefined, tokenSeparators: sel==='#tags_select' ? [','] : undefined, allowClear: sel==='#categoria_select' ? true : undefined }); }
+      }catch(e){ console.warn('Select2 init error for', sel, e); }
+    });
+  }catch(err){ console.warn('Select2 defensive init failed', err); }
+});
 </script>
 {% endblock %}

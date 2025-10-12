@@ -41,8 +41,3 @@ def eliminar_tag(tag_id):
 @login_required
 def lista_tags_web():
     return tag_controlador.lista_tags()
-
-@tagRuta.route('/web/create', methods=['GET','POST'])
-@login_required
-def crear_tag_web():
-    return tag_controlador.crear_tag_web()

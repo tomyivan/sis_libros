@@ -9,7 +9,6 @@ class CrearLibroServicio:
     def crearLibro(self, libro_data: dict) -> str:
         """Crear un nuevo libro con validaciones de negocio"""
         # Validaciones de negocio
-        self._validarDatosLibro(libro_data)
         
         print(libro_data)
         # Crear el modelo del libro
@@ -33,29 +32,3 @@ class CrearLibroServicio:
         )
 
         return self.repositorio.crearLibro(libro)
-
-    def _validarDatosLibro(self, libro_data: dict):
-        """Validaciones de negocio específicas"""
-        
-        # Validar año de publicación
-        año_actual = datetime.now().year
-        if libro_data["año_publicacion"] > año_actual:
-            raise ValueError("El año de publicación no puede ser mayor al año actual")
-        
-        if libro_data["año_publicacion"] < 1000:
-            raise ValueError("El año de publicación debe ser mayor a 1000")
-        
-        # Validar páginas
-        if libro_data["paginas"] <= 0:
-            raise ValueError("El número de páginas debe ser mayor a 0")
-        
-        # Validar ISBN (formato básico)
-        isbn = libro_data["isbn"].replace("-", "").replace(" ", "")
-        if not (len(isbn) == 10 or len(isbn) == 13):
-            raise ValueError("El ISBN debe tener 10 o 13 dígitos")
-        
-        # Validar que los campos de texto no estén vacíos
-        campos_requeridos = ["titulo", "autor", "genero", "editorial", "idioma", "descripcion", "origen_pais"]
-        for campo in campos_requeridos:
-            if not libro_data.get(campo) or libro_data[campo].strip() == "":
-                raise ValueError(f"El campo {campo} es requerido y no puede estar vacío")

@@ -19,41 +19,20 @@ def init_libro_routes():
 @libroRuta.route('/obtener', methods=['GET'])
 @token_required
 def obtener_libros():
-    return libro_controlador.obtenerLibros()
+    return libro_controlador.obtenerL
+ibros()
 
 @libroRuta.route('/obtener/<libro_id>', methods=['GET'])
 @token_required
 def obtener_libro(libro_id):
     return libro_controlador.obtenerLibro(libro_id)
 
-@libroRuta.route('/buscar', methods=['GET', 'POST'])
-@token_required
-def buscar_libros():
-    return libro_controlador.buscarLibros()
 
-@libroRuta.route('/genero/<genero>', methods=['GET'])
-@token_required
-def obtener_por_genero(genero):
-    return libro_controlador.obtenerLibrosPorGenero(genero)
-
-@libroRuta.route('/autor/<autor>', methods=['GET'])
-@token_required
-def obtener_por_autor(autor):
-    return libro_controlador.obtenerLibrosPorAutor(autor)
-
-@libroRuta.route('/mejor-calificados', methods=['GET'])
-@token_required
-def obtener_mejor_calificados():
-    return libro_controlador.obtenerMejorCalificados()
-
-@libroRuta.route('/estadisticas', methods=['GET'])
-@token_required
-def obtener_estadisticas():
-    return libro_controlador.obtenerEstadisticas()
 
 # Rutas de modificación
 @libroRuta.route('/crear', methods=['POST'])
-@token_required
+# comentar el si es neseario para la prueba
+# @token_required
 def crear_libro():
     return libro_controlador.crearLibro()
 
@@ -67,15 +46,7 @@ def actualizar_libro(libro_id):
 def eliminar_libro(libro_id):
     return libro_controlador.eliminarLibro(libro_id)
 
-@libroRuta.route('/reactivar/<libro_id>', methods=['PUT'])
-@token_required
-def reactivar_libro(libro_id):
-    return libro_controlador.reactivarLibro(libro_id)
 
-@libroRuta.route('/calificar/<libro_id>', methods=['POST'])
-@token_required
-def calificar_libro(libro_id):
-    return libro_controlador.calificarLibro(libro_id)
 
 
 # Vistas web sencillas

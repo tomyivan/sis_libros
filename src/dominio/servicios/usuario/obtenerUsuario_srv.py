@@ -1,3 +1,4 @@
+from typing import List
 from src.dominio.modelos import usuario_mod
 from src.dominio.puertos import usuario_prt
 
@@ -18,5 +19,5 @@ class ObtenerUsuarioServicio:
         else:
             return self.repositorio.obtenerUsuario(filtro)
         
-    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> list[usuario_mod.UsuarioModeloDTO]:
+    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> List[usuario_mod.UsuarioModeloDTO]:
         return self.repositorio.obtenerUsuarios(filtro=filtro)

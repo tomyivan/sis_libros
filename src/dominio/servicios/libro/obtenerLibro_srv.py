@@ -11,36 +11,15 @@ class ObtenerLibroServicio:
         filtro = libro_mod.FiltroLibroModelo(_id=libro_id)
         return self.repositorio.obtenerLibro(filtro)
         
-    def obtenerLibros(self, filtro: libro_mod.FiltroLibroModelo = None) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener lista de libros con filtros opcionales"""
+    def obtenerLibros(self, filtro: libro_mod.FiltroLibroModelo = None, offset: int = None, limit: int = None) -> List[libro_mod.LibroModeloDTO]:
+        """Obtener lista de libros con filtros opcionales y paginación.
+        Pasa offset/limit al repositorio cuando estén presentes.
+        """
         if filtro is None:
-            filtro = libro_mod.FiltroLibroModelo(disponible=True)
-        return self.repositorio.obtenerLibros(filtro)
-    
-    def obtenerLibrosPorGenero(self, genero: str) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por género"""
-        return self.repositorio.obtenerLibrosPorGenero(genero)
-    
-    def obtenerLibrosPorAutor(self, autor: str) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por autor"""
-        return self.repositorio.obtenerLibrosPorAutor(autor)
-    
-    def buscarLibros(self, texto_busqueda: str) -> List[libro_mod.LibroModeloDTO]:
-        """Buscar libros por texto"""
-        return self.repositorio.buscarLibrosPorTexto(texto_busqueda)
-    
-    def obtenerLibrosPorAño(self, año_min: int = None, año_max: int = None) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros por rango de años"""
-        filtro = libro_mod.FiltroLibroModelo(
-            año_min=año_min, 
-            año_max=año_max, 
-            disponible=True
-        )
-        return self.repositorio.obtenerLibros(filtro)
-    
-    def obtenerLibrosMejorCalificados(self, limite: int = 10) -> List[libro_mod.LibroModeloDTO]:
-        """Obtener libros mejor calificados"""
-        filtro = libro_mod.FiltroLibroModelo(calificacion_min=4.0, disponible=True)
-        libros = self.repositorio.obtenerLibros(filtro)
-        # Ordenar por calificación y limitar resultados
-        return sorted(libros, key=lambda x: x.calificacion_promedio, reverse=True)[:limite]
+            filtro = libro_mod.FiltroLibroModelo( titulo=filtro)
+        libros = self.repositorio.obtenerLibros(filtro, offset=offset, limit=limit)
+        nuevoLibro = []
+        for libro in libros:
+            libro['_id'] = str(libro['_id'])  # Convertir ObjectId a str
+            nuevoLibro.append(libro_mod.LibroModeloDTO(**libro))
+        return nuevoLibro

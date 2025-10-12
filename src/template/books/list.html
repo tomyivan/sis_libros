@@ -4,38 +4,144 @@
 
 {% block content %}
 <div class="container py-4">
+  <style>
+    /* Card styling for nicer appearance */
+    .book-card {
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .book-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
+    .book-card-img {
+      height: 200px;
+      object-fit: cover;
+      background-color: #f6f6f6;
+    }
+    .card-badges { gap: .25rem; display:flex; flex-wrap:wrap; }
+    .card-description { height: 3.6rem; overflow: hidden; text-overflow: ellipsis; }
+    .rating-stars { color: #f6b01e; }
+  </style>
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Libros</h2>
     <a href="{{ url_for('libro.crear_libro_web') }}" class="btn btn-primary">Agregar libro</a>
   </div>
-
-  {% if libros %}
-  <div class="list-group">
-    {% for libro in libros %}
-      <div class="list-group-item">
-        <div class="d-flex w-100 justify-content-between align-items-center">
-          <div>
-            <h5 class="mb-1">{{ libro['titulo'] }}</h5>
-            <p class="mb-1">{{ libro.get('autor') }} — {{ libro.get('editorial') }}</p>
-            <small class="text-muted">{{ libro.get('genero') }} • {{ libro.get('origen_pais') }}</small>
-          </div>
-          <div class="text-end">
-            <small class="text-muted d-block mb-2">{{ libro.get('año_publicacion') or libro.get('anio_publicacion') }}</small>
-            <div class="btn-group" role="group">
-              <button class="btn btn-sm btn-outline-primary" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" onclick="openDetailModal(this.dataset.id)">Ver</button>
-              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id={{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}">Editar</a>
-              <button class="btn btn-sm btn-outline-danger" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">Eliminar</button>
-              <button class="btn btn-sm btn-outline-success" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openRateModal(this.dataset.id, this.dataset.title)">Calificar</button>
+  
+  <div class="mb-3 d-flex">
+    <input id="booksSearch" class="form-control me-2" placeholder="Buscar libros (mín 3 caracteres)..." />    
+  </div>
+  <div id="booksContainer">
+    <div class="row" id="booksList">
+      {% if libros %}
+      {% for libro in libros %}
+        <div class="col-sm-6 col-md-4 mb-4" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}">
+          <div class="card h-100 book-card">
+            {% if libro.get('portada_url') %}
+              <img src="{{ libro.get('portada_url') }}" class="card-img-top book-card-img" alt="{{ libro['titulo']|e }}">
+            {% else %}
+              <div class="book-card-img d-flex align-items-center justify-content-center text-muted">No disponible</div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">{{ libro['titulo'] }}</h5>
+              <p class="card-text mb-1">{{ libro.get('autor') }} — {{ libro.get('editorial') }}</p>
+              <div class="card-badges mb-2">
+                {% if libro.get('genero') %}
+                  {% for genero in libro.get('genero') %}
+                  <span class="badge bg-secondary">{{ genero }}</span>
+                  {% endfor %}
+                {% endif %}
+                <span class="badge bg-light text-dark">{{ libro.get('origen_pais') }}</span>
+                <span class="badge bg-info text-white">{{ libro.get('año_publicacion') or libro.get('anio_publicacion') }}</span>
+              </div>
+              <p class="card-description text-muted small">{{ libro.get('descripcion')[:120] if libro.get('descripcion') else '' }}</p>
+              <div class="mt-auto">
+                <div class="btn-group" role="group">
+                  <button class="btn btn-sm btn-outline-primary" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" onclick="openDetailModal(this.dataset.id)">Ver</button>
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id={{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}">Editar</a>
+                  <button class="btn btn-sm btn-outline-danger" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">Eliminar</button>
+                  <button class="btn btn-sm btn-outline-success" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openRateModal(this.dataset.id, this.dataset.title)">Calificar</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+      {% endif %}
+    </div>
+    <p id="noBooksMsg" class="{% if libros %}d-none{% endif %}">No hay libros para mostrar.</p>
   </div>
-  {% else %}
-    <p>No hay libros para mostrar.</p>
-  {% endif %}
+
+  <div class="text-center my-3">
+    <button id="booksLoadMore" class="btn btn-outline-primary">Cargar más</button>
+  </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}{% endblock %}
+{% block extra_js %}
+<script>
+
+  const apiUrl = '{{ url_for("libro.obtener_libros_web") }}';
+  function obtenerLibros(filtros = {}, offset = 0, limit = 6) {
+    $.ajax({
+      url: apiUrl,
+      method: 'GET',
+      data: { ...filtros, offset, limit },
+      success: function(response) {
+        console.log(response);
+        if (response.data.libros && response.data.libros.length > 0) {
+          $('#noBooksMsg').addClass('d-none');
+          response.data.libros.forEach(libro => {
+            const libroHtml = `
+              <div class="col-sm-6 col-md-4 mb-4" data-id="${libro._id || libro.id || libro.id_libro}">
+                <div class="card h-100 book-card">
+                  ${libro.portada_url ? `<img src="${libro.portada_url}" class="card-img-top book-card-img" alt="${libro.titulo}">` : `<div class="book-card-img d-flex align-items-center justify-content-center text-muted">No disponible</div>`}
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">${libro.titulo}</h5>
+                    <p class="card-text mb-1">${libro.autor || ''} — ${libro.editorial || ''}</p>
+                    <div class="card-badges mb-2">
+                      ${libro.genero ? libro.genero.map(g => `<span class="badge bg-secondary">${g}</span>`).join('') : ''}
+                      <span class="badge bg-light text-dark">${libro.origen_pais || ''}</span>
+                      <span class="badge bg-info text-white">${libro.año_publicacion || libro.anio_publicacion || ''}</span>
+                    </div>
+                    <p class="card-description text-muted small">${libro.descripcion ? libro.descripcion.substring(
+0, 120) : ''}</p>
+                    <div class="mt-auto">
+                      <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" data-id="${libro._id || libro.id || libro.id_libro}" onclick="openDetailModal(this.dataset.id)">Ver</button>
+                        <a class="btn btn-sm
+  btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id=${libro._id || libro.id || libro.id_libro}">Editar</a>
+                        <button class="btn btn-sm btn-outline-danger" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">Eliminar</button>
+                        <button class="btn btn-sm btn-outline-success" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openRateModal(this.dataset.id, this.dataset.title)">Calificar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+            console.log(libroHtml);
+            $('#booksList').append(libroHtml);
+          });
+        } else if (offset === 0) {
+          $('#noBooksMsg').removeClass('d-none');
+        }
+      },
+      error: function() {
+        alert('Error al obtener los libros.');
+      }
+    });
+  }
+
+  $(document).on('keyup', '#booksSearch', function() {
+    const buscar = $(this).val();
+    if (buscar.length >= 3 || buscar.length === 0) {
+      $('#booksList').empty();
+      obtenerLibros({ titulo: buscar }, 0, 6);
+    }
+  });
+
+
+  $(document).on('click', '#booksLoadMore', function() {
+    const offset = $('#booksList .book-card').length;
+    obtenerLibros({}, offset, 6);
+  });
+</script>
+{% endblock %}

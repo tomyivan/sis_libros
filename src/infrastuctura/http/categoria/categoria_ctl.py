@@ -14,9 +14,19 @@ class CategoriaControlador:
 
     def obtenerCategorias(self):
         try:
-            categorias = self.app.obtenerCategorias()
+            try:
+                offset = int(request.args.get('offset', 0))
+            except ValueError:
+                offset = 0
+            try:
+                limit = int(request.args.get('limit', 10))
+            except ValueError:
+                limit = 10
+            q = request.args.get('q')
+
+            categorias = self.app.obtenerCategorias(offset=offset, limit=limit, q=q)
             categorias_dict = [c.__dict__ for c in categorias]
-            return jsonify(ResponseApi.exito({'categorias': categorias_dict, 'total': len(categorias_dict)}, 200))
+            return jsonify(ResponseApi.exito({'categorias': categorias_dict, 'total': len(categorias_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 
@@ -71,9 +81,9 @@ class CategoriaControlador:
     # Web views
     def lista_categorias(self):
         try:
-            categorias = self.app.obtenerCategorias()
-            categorias_list = [c.__dict__ for c in categorias]
-            return render_template('categoria/list.html', categorias=categorias_list)
+            primeros = self.app.obtenerCategorias(offset=0, limit=10)
+            categorias_list = [c.__dict__ for c in primeros]
+            return render_template('categoria/list.html', categorias=categorias_list, initial_limit=10)
         except Exception as e:
             print(e)
             flash('Error al listar categorías', 'danger')

@@ -8,102 +8,204 @@
     <h2>Categorías</h2>
     <button class="btn btn-primary" id="btnNewCategoria">Agregar categoría</button>
   </div>
-
-  {% if categorias %}
-  <div class="list-group">
-    {% for c in categorias %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <div class="fw-semibold">{{ c.nombre }}</div>
-          <div class="text-muted small">{{ c.descripcion }}</div>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-outline-secondary btnEditCategoria" data-id="{{ c._id }}" data-nombre="{{ c.nombre|e }}" data-descripcion="{{ c.descripcion|e }}">Editar</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="openConfirmDelete('{{ c._id }}', '{{ c.nombre|e }}')">Eliminar</button>
-        </div>
-      </div>
-    {% endfor %}
+  <div class="mb-3 d-flex">
+    <input id="categoriasSearch" class="form-control me-2" placeholder="Buscar categorías (mín 3 caracteres)..." />
+    <button id="categoriasSearchBtn" class="btn btn-outline-secondary">Buscar</button>
   </div>
-  {% else %}
-    <p>No hay categorías.</p>
-  {% endif %}
+
+  <div id="categoriasContainer">
+    {% if categorias %}
+    <div class="list-group" id="categoriasList">
+      {% for c in categorias %}
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ c._id }}">
+          <div>
+            <div class="fw-semibold">{{ c.nombre }}</div>
+            <div class="text-muted small">{{ c.descripcion }}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditCategoria" data-id="{{ c._id }}" data-nombre="{{ c.nombre|e }}" data-descripcion="{{ c.descripcion|e }}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger" id="btnDeleteCategoria" data-id="{{ c._id }}">Eliminar</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p id="noCategoriasMsg">No hay categorías.</p>
+    {% endif %}
+  </div>
+
+  <div class="text-center my-3">
+    <button id="categoriasLoadMore" class="btn btn-outline-primary">Cargar más</button>
+  </div>
 </div>
 {% endblock %}
 {% block extra_js %}
 <script>
-  // Create/Edit modal markup
-  const categoriaModalHtml = `
-  <div class="modal fade" id="categoriaModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="categoriaModalLabel">Nueva categoría</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="categoriaForm">
-            <input type="hidden" name="edit_id" id="categoria_edit_id" />
-            <div class="mb-3">
-              <label class="form-label">Nombre</label>
-              <input name="nombre" id="categoria_nombre" class="form-control" required />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Descripción</label>
-              <textarea name="descripcion" id="categoria_descripcion" class="form-control"></textarea>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button id="categoriaSave" type="button" class="btn btn-primary">Guardar</button>
+  $(document).ready(function () {
+    // inicio modal
+    const categoriaModalHtml = `
+    <div class="modal fade" id="categoriaModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="categoriaModalLabel">Nueva categoría</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="categoriaForm">
+              <input type="hidden" name="edit_id" id="categoria_edit_id" />
+              <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input name="nombre" id="categoria_nombre" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="descripcion" id="categoria_descripcion" class="form-control"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button id="categoriaSave" type="submit" form="categoriaForm" class="btn btn-primary">Guardar</button>
+          </div>
         </div>
       </div>
-    </div>
-  </div>`;
-
-  document.body.insertAdjacentHTML('beforeend', categoriaModalHtml);
-
-  const categoriaModal = new bootstrap.Modal(document.getElementById('categoriaModal'));
-
-  document.getElementById('btnNewCategoria').addEventListener('click', ()=>{
-    document.getElementById('categoriaForm').reset();
-    document.getElementById('categoria_edit_id').value = '';
-    document.getElementById('categoriaModalLabel').innerText = 'Nueva categoría';
-    categoriaModal.show();
-  });
-
-  document.querySelectorAll('.btnEditCategoria').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const id = btn.dataset.id;
-      const nombre = btn.dataset.nombre;
-      const descripcion = btn.dataset.descripcion;
-      document.getElementById('categoria_edit_id').value = id;
-      document.getElementById('categoria_nombre').value = nombre;
-      document.getElementById('categoria_descripcion').value = descripcion;
-      document.getElementById('categoriaModalLabel').innerText = 'Editar categoría';
+    </div>`;
+    
+    $('body').append(categoriaModalHtml);
+    const categoriaModal = new bootstrap.Modal(document.getElementById('categoriaModal'));
+    $('#btnNewCategoria').on('click', ()=>{
+      $('#categoriaForm')[0].reset();
+      $('#categoria_edit_id').val('');
+      $('#categoriaModalLabel').text('Nueva categoría');
       categoriaModal.show();
     });
-  });
 
-  document.getElementById('categoriaSave').addEventListener('click', async (event)=>{
-    event.preventDefault();
-    const form = document.getElementById('categoriaForm');
-    const data = new FormData(form);
-    const payload = {};
-    data.forEach((v,k)=> payload[k]=v);
-    try{
-        let resp;
-        if(payload.edit_id===''){ delete payload.edit_id; 
-            resp = await fetch(`{{ url_for('categoria.crear_categoria') }}`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-        }else{
-            const edit_id = payload.edit_id; delete payload.edit_id;
-            resp = await fetch(`{{ url_for('categoria.actualizar_categoria', categoria_id='') }}/${edit_id}`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    $(document).on('click', '.btnEditCategoria', function(){
+      const btn = $(this);
+      const id = btn.data('id');
+      const nombre = btn.data('nombre');
+      const descripcion = btn.data('descripcion');
+      $('#categoria_edit_id').val(id);
+      $('#categoria_nombre').val(nombre);
+      $('#categoria_descripcion').val(descripcion);
+      $('#categoriaModalLabel').text('Editar categoría');
+      categoriaModal.show();
+    });
+
+    $(document).on('submit', '#categoriaForm', function(e){
+      e.preventDefault();
+      const payload = {
+          nombre: $('#categoria_nombre').val(),
+          descripcion: $('#categoria_descripcion').val(),
+      };
+            const editId = $('#categoria_edit_id').val();
+            let url, method;
+
+            if (editId) {
+                url = `{{ url_for('categoria.actualizar_categoria', categoria_id='') }}/${editId}`;
+                method = 'PUT';
+            } else {
+                url = `{{ url_for('categoria.crear_categoria') }}`;
+                method = 'POST';
+            }
+          $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: function (r) {
+          if (!r || !r.estado) {
+            alert(r?.msg || 'Error');
+            return;
+          }
+          categoriaModal.hide();
+          alert(r.msg || 'Operación exitosa');
+          location.reload();
+        },
+        error: function (jqXHR) {
+          const j = jqXHR.responseJSON || {};
+          alert(j.message || 'Error');
         }
+      })
+        
+    });
 
-        const r = await resp.json().catch(()=>null);
-        console.log(r);
-        if(resp.ok){ location.reload(); } else { alert(r?.message || 'Error'); }
-    }catch(e){ alert('Error: '+e); }
+    $(document).on('click', '#btnDeleteCategoria', function(){
+      const btn = $(this);
+      const id = btn.data('id');
+      alert(id)
+      $.ajax({
+        url: `{{ url_for('categoria.eliminar_categoria', categoria_id='') }}/${id}`,
+        method: 'DELETE',
+        success: function(r){
+          if(!r || !r.estado){
+            alert(r?.msg || 'Error');
+            return;
+          }
+          alert(r.msg || 'Operación exitosa');
+          location.reload();
+        },
+        error: function(jqXHR){
+          const j = jqXHR.responseJSON || {};
+          alert(j.message || 'Error');
+        }
+      });
+    });
+  });
+</script>
+<script>
+  $(function(){
+    const apiUrl = '{{ url_for("categoria.obtener_categorias") }}';
+    let offset = {{ initial_limit | default(10) }};
+    const limit = {{ initial_limit | default(10) }};
+    let q = '';
+
+    function appendCat(c){
+      const html = `
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${c._id}">
+          <div>
+            <div class="fw-semibold">${c.nombre}</div>
+            <div class="text-muted small">${c.descripcion || ''}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditCategoria" data-id="${c._id}" data-nombre="${(c.nombre||'').replace(/"/g,'\"')}" data-descripcion="${(c.descripcion||'').replace(/"/g,'\"')}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger" id="btnDeleteCategoria" data-id="${c._id}">Eliminar</button>
+          </div>
+        </div>`;
+      $('#categoriasList').append(html);
+    }
+
+    $('#categoriasLoadMore').on('click', function(){
+      $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+        .done(function(r){
+          if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+          const items = r.data.categorias || [];
+          if(items.length === 0){ $('#categoriasLoadMore').prop('disabled', true).text('No hay más'); return; }
+          items.forEach(appendCat);
+          offset += items.length;
+        })
+        .fail(function(){ alert('Error al cargar más categorías'); });
+    });
+
+    function performCategoriasSearch(){
+      const term = $('#categoriasSearch').val().trim();
+      if(term.length < 3){ return; }
+      q = term; offset = 0; $('#categoriasList').empty(); $('#categoriasLoadMore').prop('disabled', false).text('Cargar más');
+      $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
+        .done(function(r){
+          if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
+          const items = r.data.categorias || [];
+          if(items.length === 0){ $('#noCategoriasMsg').show(); $('#categoriasLoadMore').prop('disabled', true).text('No hay más'); return; }
+          $('#noCategoriasMsg').hide(); items.forEach(appendCat); offset += items.length;
+        })
+        .fail(function(){ alert('Error en la búsqueda'); });
+    }
+
+    const debounce = (fn, wait) => { let t; return function(){ const args=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; };
+    const debouncedCategoriasSearch = debounce(performCategoriasSearch, 300);
+    $('#categoriasSearch').on('input', debouncedCategoriasSearch);
+    $('#categoriasSearchBtn').on('click', performCategoriasSearch);
   });
 </script>
 {% endblock %}

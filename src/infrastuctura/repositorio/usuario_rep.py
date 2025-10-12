@@ -1,5 +1,6 @@
 from src.custom.error_custom import APIError
 from src.helpers import MongoConnection
+from typing import List
 from src.dominio.modelos import usuario_mod
 from src.dominio.puertos import usuario_prt
 from bson import ObjectId
@@ -22,7 +23,7 @@ class UsuarioRepositorio(usuario_prt.UsuarioPuerto):
             print(f"Error al obtener usuario: {e}")
             raise APIError("Error al obtener usuario")
         
-    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> list[usuario_mod.UsuarioModeloDTO]:
+    def obtenerUsuarios(self, filtro: usuario_mod.FiltroUsuarioModelo) -> List[usuario_mod.UsuarioModeloDTO]:
         try:
             query = {k: v for k, v in filtro.__dict__.items() if v is not None}
             respuesta = self.collection.find(query,
