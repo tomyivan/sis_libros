@@ -8,6 +8,7 @@ from src.infrastuctura.http.pais.pais_ruta import paisRuta, init_pais_routes
 from src.infrastuctura.http.idioma.idioma_ruta import idiomaRuta, init_idioma_routes
 from src.infrastuctura.http.autenticacion.auth_ctl import AuthControlador
 from src.infrastuctura.http.genero.genero_ruta import generoRuta, init_genero_routes
+from src.infrastuctura.http.historial.historial_ruta import historialRuta, init_historial_routes
 from src.custom.error_custom import APIError
 from src.util.responseApi import ResponseApi
 import dotenv
@@ -36,7 +37,8 @@ init_genero_routes()
 init_pais_routes()
 # Inicializar dependencias de idiomas
 init_idioma_routes()
-
+# Inicializar dependencias de historial
+init_historial_routes()
 # Registrar blueprints
 app.register_blueprint(authRuta)
 app.register_blueprint(usuarioRuta)
@@ -46,6 +48,7 @@ app.register_blueprint(tagRuta)
 app.register_blueprint(generoRuta)
 app.register_blueprint(paisRuta)
 app.register_blueprint(idiomaRuta)
+app.register_blueprint(historialRuta)
 # Inicializar controlador de auth para rutas globales
 auth_controller = AuthControlador()
 

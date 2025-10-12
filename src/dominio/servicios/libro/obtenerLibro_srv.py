@@ -8,8 +8,12 @@ class ObtenerLibroServicio:
 
     def obtenerLibro(self, libro_id: str) -> libro_mod.LibroModeloDTO:
         """Obtener un libro por ID"""
-        filtro = libro_mod.FiltroLibroModelo(_id=libro_id)
-        return self.repositorio.obtenerLibro(filtro)
+        filtro = libro_mod.FiltroLibroModelo(_id = libro_id)
+        libro = self.repositorio.obtenerLibro(filtro)
+        if libro:
+            libro['_id'] = str(libro['_id'])  # Convertir ObjectId a str
+            return libro_mod.LibroModeloDTO(**libro)
+        return None
         
     def obtenerLibros(self, filtro: libro_mod.FiltroLibroModelo = None, offset: int = None, limit: int = None) -> List[libro_mod.LibroModeloDTO]:
         """Obtener lista de libros con filtros opcionales y paginación.

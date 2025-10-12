@@ -119,14 +119,9 @@
  
     });
 
-  });
-</script>
-<script>
-$(function(){
-  const apiUrl = '{{ url_for("idioma.obtener_idiomas") }}';
-  let offset = {{ (initial_limit | default(10)) | tojson }};
-  const limit = {{ (initial_limit | default(10)) | tojson }};
-  let q = '';
+
+  let offset = 0;
+  const limit = 10;
 
   function appendIdioma(p){
     const html = `
@@ -154,24 +149,63 @@ $(function(){
       .fail(function(){ alert('Error al cargar más idiomas'); });
   });
 
-  function performIdiomasSearch(){
-    const term = $('#idiomasSearch').val().trim();
-    if(term.length < 3) return;
-    q = term; offset = 0; $('#idiomasList').empty(); $('#idiomasLoadMore').prop('disabled', false).text('Cargar más');
-    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-      .done(function(r){
-        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
-        const items = r.data.idiomas || [];
-        if(items.length === 0){ $('#noIdiomasMsg').show(); $('#idiomasLoadMore').prop('disabled', true).text('No hay más'); return; }
-        $('#noIdiomasMsg').hide(); items.forEach(appendIdioma); offset += items.length;
-      })
-      .fail(function(){ alert('Error en la búsqueda'); });
+  function debounce(fn, wait){
+    let t = null;
+    return function(){
+      const args = arguments;
+      const ctx = this;
+      clearTimeout(t);
+      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+    };
   }
 
-  const debounce = (fn, wait) => { let t; return function(){ const args=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; };
-  const debouncedIdiomasSearch = debounce(performIdiomasSearch, 300);
-  $('#idiomasSearch').on('input', debouncedIdiomasSearch);
-  $('#idiomasSearchBtn').on('click', performIdiomasSearch);
+  function obtenerIdiomas(filtro= {}, offset = 0, limit = 10){
+    const apiUrl = '{{ url_for("idioma.obtener_idiomas") }}';
+    $.ajax({
+      url: apiUrl,
+      method: 'GET',
+      data: { ...filtro, offset, limit },
+      success: function(response){
+        console.log('Idiomas response:', response);
+        if(response && response.estado){
+          if(response.data.idiomas.length > 0){
+            response.data.idiomas.forEach(p => {
+              appendIdioma(p);
+            });
+          }else{
+            $('#noIdiomasMsg').removeClass('d-none');
+          }
+        }
+      }
+    });
+  }
+
+  $(document).on('keyup', '#idiomasSearch', function() {
+    const val = $(this).val().trim();
+    if(val.length >= 3 || val.length === 0){
+      $('#idiomasList').empty();
+      debounce(function(){
+        obtenerIdiomas(val.length >= 3 ? { q: val } : {}, 0, 10);
+      }, 300)();
+    }
+  });
+  $(document).on('click', '#idiomasLoadMore', function() {
+    const currentCount = $('#idiomasList .list-group-item').length;
+    const searchTerm = $('#idiomasSearch').val().trim();
+    obtenerIdiomas(searchTerm.length >= 3 ? { q: searchTerm } : {}, currentCount, 10);
+  });
+  $(document).on('click', '.btnDeleteIdioma', function() {
+    const id = $(this).data('id');
+    const nombre = $(this).data('nombre');
+    if (!confirm(`Eliminar idioma "${nombre}" ?`)) return;
+
+    $.ajax({
+      url: `{{ url_for('idioma.eliminar_idioma', idioma_id='') }}/${id}`,
+      method: 'DELETE'
+    })
+    .done(function() { location.reload(); })
+    .fail(function(jqXHR) { const j = jqXHR.responseJSON || {}; alert(j.message || 'Error'); });
+  });
 });
 </script>
 {% endblock %}

@@ -28,8 +28,8 @@ class ResponseApi:
         if isinstance(msg, (dict, list)):
             return {
                 "estado": False,
-                "msg": "",
-                "data": msg
+                "msg": msg,
+                "data": data
             }
         return {
             "estado": False,

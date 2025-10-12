@@ -4,7 +4,6 @@ from typing import List
 from src.dominio.modelos import usuario_mod
 from src.dominio.puertos import usuario_prt
 from bson import ObjectId
-
 class UsuarioRepositorio(usuario_prt.UsuarioPuerto):
     def __init__(self, conexion: MongoConnection):
         self.db = conexion.conectar()

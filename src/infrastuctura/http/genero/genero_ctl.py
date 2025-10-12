@@ -29,7 +29,7 @@ class GeneroControlador:
 
             generos = self.app.obtenerGeneros(offset=offset, limit=limit, q=q)
             generos_dict = [g.__dict__ for g in generos]
-            return jsonify(ResponseApi.exito({'generos': generos_dict, 'total': len(generos_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
+            return jsonify(ResponseApi.exito('Generos obtenidos',{'generos': generos_dict, 'total': len(generos_dict), 'offset': offset, 'limit': limit, 'q': q}))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 

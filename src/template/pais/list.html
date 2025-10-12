@@ -10,7 +10,6 @@
   </div>
   <div class="mb-3 d-flex">
     <input id="paisesSearch" class="form-control me-2" placeholder="Buscar países (mín 3 caracteres)..." />
-    <button id="paisesSearchBtn" class="btn btn-outline-secondary">Buscar</button>
   </div>
 
   <div id="paisesContainer">
@@ -92,7 +91,7 @@ $(document).ready(function(){
         paisModal && paisModal.show();
     });
 
-    // Guard submit to avoid double-binding when template re-initializes
+    // Guardar país (crear o actualizar)
     const paisFormEl = document.getElementById('paisForm');
     if(paisFormEl && !paisFormEl.dataset.initialized){
         paisFormEl.addEventListener('submit', function(e){
@@ -111,64 +110,71 @@ $(document).ready(function(){
                     if(!r.estado){ alert('Error en la operación'); return; }
                     try{ paisModal && paisModal.hide(); }catch(e){}
                     alert('Se Guardó el país');
-                    location.reload();
+                    $('#paisesList').empty();
+                    obtenerPaises({}, 0, 10);
                 },
                 error: function(jqXHR){ const j = jqXHR.responseJSON || {}; alert(j.message || 'Error en la operación'); }
             });
         });
         paisFormEl.dataset.initialized = '1';
     }
-      <script>
-      $(function(){
-        const apiUrl = '{{ url_for("pais.obtener_paises") }}';
-        let offset = {{ initial_limit | default(10) }};
-        const limit = {{ initial_limit | default(10) }};
-        let q = '';
 
-        function appendPais(p){
-          const html = `
-            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${p._id}">
-              <div>
-                <div class="fw-semibold">${p.nombre}</div>
-              </div>
-              <div>
-                <button class="btn btn-sm btn-outline-secondary btnEditPais" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Editar</button>
-                <button class="btn btn-sm btn-outline-danger btnDeletePais" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
-              </div>
-            </div>`;
-          $('#paisesList').append(html);
+    function appendPais(p){
+      const html = `
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${p._id}">
+          <div>
+            <div class="fw-semibold">${p.nombre}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditPais" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger btnDeletePais" data-id="${p._id}" data-nombre="${(p.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
+          </div>
+        </div>`;
+      $('#paisesList').append(html);
+    }
+
+  function obtenerPaises(filtro= {}, offset = 0, limit = 10){
+    const apiUrl = '{{ url_for("pais.obtener_paises") }}';
+    $.ajax({
+      url: apiUrl,
+      method: 'GET',
+      data: { ...filtro, offset, limit },
+      success: function(response){
+        console.log('Paises response:', response);
+        if(response && response.estado){
+          if(response.data.paises.length > 0){
+            $('#noPaisesMsg').addClass('d-none');
+            if(!$('#paisesList').length){
+              $('#paisesContainer').html('<div class="list-group" id="paisesList"></div>');
+            }
+            response.data.paises.forEach(p => {
+              appendPais(p);
+            });
+          } else if(offset === 0){
+            $('#noPaisesMsg').removeClass('d-none');
+          }
+        } else {
+          alert(response?.msg || 'Error al obtener países');
         }
+      },
+    })
+  }
 
-        $('#paisesLoadMore').on('click', function(){
-          $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-            .done(function(r){
-              if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
-              const items = r.data.paises || [];
-              if(items.length === 0){ $('#paisesLoadMore').prop('disabled', true).text('No hay más'); return; }
-              items.forEach(appendPais);
-              offset += items.length;
-            })
-            .fail(function(){ alert('Error al cargar más países'); });
-        });
+  $(document).on('keyup', '#paisesSearch', function(e) {
+    const val = e.target.value.trim();
+    if(val.length >= 3 || val.length === 0){
+      $('#paisesList').empty();
+      obtenerPaises(val.length >= 3 ? { q: val } : {}, 0, 10);
+    }
+  });
 
-        function performPaisesSearch(){
-          const term = $('#paisesSearch').val().trim();
-          if(term.length < 3) return;
-          q = term; offset = 0; $('#paisesList').empty(); $('#paisesLoadMore').prop('disabled', false).text('Cargar más');
-          $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-            .done(function(r){
-              if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
-              const items = r.data.paises || [];
-              if(items.length === 0){ $('#noPaisesMsg').show(); $('#paisesLoadMore').prop('disabled', true).text('No hay más'); return; }
-              $('#noPaisesMsg').hide(); items.forEach(appendPais); offset += items.length;
-            })
-            .fail(function(){ alert('Error en la búsqueda'); });
-        }
+  
+  $(document).on('click', '#paisesLoadMore', function() {
+    const currentCount = $('#paisesList .list-group-item').length;
+    const searchTerm = $('#paisesSearch').val().trim();
+    obtenerPaises(searchTerm.length >= 3 ? { q: searchTerm } : {}, currentCount, 10);
+  });
+});
+</script>
 
-        const debounce = (fn, wait) => { let t; return function(){ const args=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; };
-        const debouncedPaisesSearch = debounce(performPaisesSearch, 300);
-        $('#paisesSearch').on('input', debouncedPaisesSearch);
-        $('#paisesSearchBtn').on('click', performPaisesSearch);
-      });
-      </script>
 {% endblock %}

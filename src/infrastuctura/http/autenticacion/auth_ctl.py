@@ -148,8 +148,7 @@ def token_required(f):
     def decorated_function(*args, **kwargs):
         # Validación basada en sesión
         if 'user_id' not in session:
-            return jsonify(ResponseApi.error('Autenticación requerida', 401))
-
+            return jsonify(ResponseApi.error('Autenticación requerida', 401) )
         # Rellenar current_user con la información de la sesión para que los controladores la usen
         request.current_user = {
             'id': session.get('user_id'),

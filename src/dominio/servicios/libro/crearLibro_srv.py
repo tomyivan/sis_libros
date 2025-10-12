@@ -25,8 +25,6 @@ class CrearLibroServicio:
             origen_pais=libro_data["origen_pais"],
             disponible=libro_data.get("disponible", True),
             fecha_creacion=datetime.now(),
-            calificacion_promedio=0.0,
-            numero_calificaciones=0,
             portada_url=libro_data.get("portada_url"),
             tags=libro_data.get("tags", [])
         )

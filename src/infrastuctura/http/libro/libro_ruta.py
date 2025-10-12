@@ -19,8 +19,7 @@ def init_libro_routes():
 @libroRuta.route('/obtener', methods=['GET'])
 @token_required
 def obtener_libros():
-    return libro_controlador.obtenerL
-ibros()
+    return libro_controlador.obtenerLibros()
 
 @libroRuta.route('/obtener/<libro_id>', methods=['GET'])
 @token_required

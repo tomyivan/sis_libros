@@ -15,10 +15,8 @@ class LibroRepositorio(libro_prt.LibroPuerto):
     def obtenerLibro(self, filtro: libro_mod.FiltroLibroModelo) -> libro_mod.LibroModeloDTO:
         try:
             query = self._construir_query(filtro)
-            respuesta = self.collection.find_one(query)
-            if respuesta:
-                return self._convertir_a_dto(respuesta)
-            return None
+            return self.collection.find_one(query)
+            
         except Exception as e:
             print(f"Error al obtener libro: {e}")
             raise APIError("Error al obtener libro")
@@ -27,17 +25,10 @@ class LibroRepositorio(libro_prt.LibroPuerto):
         try:
             query = self._construir_query(filtro)
             cursor = self.collection.find(query).sort("fecha_creacion", -1)  # Más recientes primero
-
-            # Aplicar paginación en la consulta cuando se proporcionen offset/limit
             if isinstance(offset, int) and offset > 0:
                 cursor = cursor.skip(offset)
             if isinstance(limit, int) and limit > 0:
                 cursor = cursor.limit(limit)
-            # print(cursor)
-            # libros = []
-            # for libro in cursor:
-            #     libros.append(self._convertir_a_dto(libro))
-            # return libros
             return cursor
         except Exception as e:
             print(f"Error al obtener libros: {e}")
@@ -113,8 +104,6 @@ class LibroRepositorio(libro_prt.LibroPuerto):
             query["origen_pais"] = filtro.origen_pais
         if filtro.disponible is not None:
             query["disponible"] = filtro.disponible
-        if filtro.calificacion_min:
-            query["calificacion_promedio"] = {"$gte": filtro.calificacion_min}
         if filtro.tags:
             query["tags"] = {"$in": filtro.tags}
             

@@ -8,13 +8,11 @@
     <h2>Tags</h2>
     <button class="btn btn-primary" id="btnNewTag">Agregar tag</button>
   </div>
-
   <div class="mb-3 d-flex">
     <input id="tagsSearch" class="form-control me-2" placeholder="Buscar tags (mín 3 caracteres)..." />
-    <button id="tagsSearchBtn" class="btn btn-outline-secondary">Buscar</button>
   </div>
 
-  <div id="tagsContainer">
+  <div id="tagsContainer" data-api-url="{{ url_for('tag.obtener_tags') }}" data-limit="{{ initial_limit | default(10) }}">
     {% if tags %}
     <div class="list-group" id="tagsList">
       {% for t in tags %}
@@ -40,100 +38,149 @@
   </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-  const tagModalHtml = `
-  <div class="modal fade" id="tagModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagModalLabel">Nuevo tag</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="tagForm">
-            <input type="hidden" name="edit_id" id="tag_edit_id" />
-            <div class="mb-3">
-              <label class="form-label">Nombre</label>
-              <input name="nombre" id="tag_nombre" class="form-control" required />
+$(document).ready(function(){
+    // Modal HTML template
+    const modalHtml = `
+    <div class="modal fade" id="tagModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tagModalLabel">Nuevo tag</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tagForm">
+                        <input type="hidden" name="edit_id" id="tag_edit_id" />
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input name="nombre" id="tag_nombre" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripcion</label>
+                            <textarea name="descripcion" id="tag_descripcion" class="form-control"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="tagSave" type="submit" form="tagForm" class="btn btn-primary">Guardar</button>
+                </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Descripcion</label>
-              <textarea name="descripcion" id="tag_descripcion" class="form-control"></textarea>
-            </div>
-          </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button id="tagSave" type="submit" form="tagForm" class="btn btn-primary">Guardar</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+    </div>`;
 
-  $('body').append(tagModalHtml);
-
-  const tagModal = new bootstrap.Modal($('#tagModal')[0]);
-
-  $('#btnNewTag').on('click', function() {
-    $('#tagForm')[0].reset();
-    $('#tag_edit_id').val('');
-    $('#tagModalLabel').text('Nuevo tag');
-    tagModal.show();
-  });
-
-  $('.btnEditTag').on('click', function() {
-    const id = $(this).data('id');
-    const nombre = $(this).data('nombre');
-    const descripcion = $(this).data('descripcion');
-    $('#tag_edit_id').val(id);
-    $('#tag_nombre').val(nombre);
-    $('#tag_descripcion').val(descripcion);
-    $('#tagModalLabel').text('Editar tag');
-    tagModal.show();
-  });
-
-  $('#tagForm').on('submit', function(evt) {
-    evt.preventDefault();
-    const form = $(this);
-    const data = form.serializeArray();
-    const payload = {};
-    data.forEach(item => payload[item.name] = item.value);
-
-    let url, method;
-    if (!payload.edit_id) {
-      delete payload.edit_id;
-      url = `{{ url_for('tag.crear_tag') }}`;
-      method = 'POST';
-    } else {
-      const edit_id = payload.edit_id;
-      delete payload.edit_id;
-      url = `{{ url_for('tag.actualizar_tag', tag_id='') }}/${edit_id}`;
-      method = 'PUT';
+    // Append modal once
+    if(!document.getElementById('tagModal')){
+        $('body').append(modalHtml);
     }
 
-    $.ajax({
-      url: url,
-      method: method,
-      contentType: 'application/json',
-      data: JSON.stringify(payload)
-    })
-    .done(function(r) {
-      if (!r || !r.estado) {
-        alert(r?.msg || 'Error');
-        return;
-      }
-      tagModal.hide();
-      alert(r.msg || 'Operación exitosa');
-      location.reload();
-    })
-    .fail(function(jqXHR) {
-      const j = jqXHR.responseJSON || {};
-      alert(j.message || 'Error');
+    const tagModalEl = document.getElementById('tagModal');
+    const tagModal = tagModalEl ? new bootstrap.Modal(tagModalEl) : null;
+
+    $('#btnNewTag').on('click', function(){
+        $('#tagModalLabel').text('Nuevo tag');
+        const f = document.getElementById('tagForm'); if(f) f.reset();
+        document.getElementById('tag_edit_id').value = '';
+        tagModal && tagModal.show();
     });
+
+    $(document).on('click', '.btnEditTag', function(){
+        const id = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const descripcion = $(this).data('descripcion');
+        $('#tagModalLabel').text('Editar tag');
+        document.getElementById('tag_nombre').value = nombre || '';
+        document.getElementById('tag_descripcion').value = descripcion || '';
+        document.getElementById('tag_edit_id').value = id || '';
+        tagModal && tagModal.show();
+    });
+
+    // Guardar tag (crear o actualizar)
+    const tagFormEl = document.getElementById('tagForm');
+    if(tagFormEl && !tagFormEl.dataset.initialized){
+        tagFormEl.addEventListener('submit', function(e){
+            e.preventDefault();
+            const id = document.getElementById('tag_edit_id').value;
+            const nombre = document.getElementById('tag_nombre').value.trim();
+            const descripcion = document.getElementById('tag_descripcion').value.trim();
+            if(!nombre){ alert('El nombre es requerido'); return; }
+            const url = id ? '{{ url_for("tag.actualizar_tag", tag_id="") }}' + id : '{{ url_for("tag.crear_tag") }}';
+            const method = id ? 'PUT' : 'POST';
+            $.ajax({
+                url: url,
+                method: method,
+                contentType: 'application/json',
+                data: JSON.stringify({ nombre, descripcion }),
+                success: function(r){
+                    if(!r.estado){ alert('Error en la operación'); return; }
+                    try{ tagModal && tagModal.hide(); }catch(e){}
+                    alert('Se Guardó el tag');
+                    $('#tagsList').empty();
+                    obtenerTags({}, 0, Number($('#tagsContainer').data('limit') || 10));
+                },
+                error: function(jqXHR){ const j = jqXHR.responseJSON || {}; alert(j.message || 'Error en la operación'); }
+            });
+        });
+        tagFormEl.dataset.initialized = '1';
+    }
+
+    function appendTag(t){
+      const html = `
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${t._id}">
+          <div>
+            <div class="fw-semibold">${t.nombre}</div>
+            <div class="text-muted small">${t.descripcion || ''}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}" data-descripcion="${(t.descripcion||'').replace(/"/g,'\"')}">Editar</button>
+            <button class="btn btn-sm btn-outline-danger btnDeleteTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
+          </div>
+        </div>`;
+      $('#tagsList').append(html);
+    }
+
+  function obtenerTags(filtro= {}, offset = 0, limit = 10){
+    const apiUrl = $('#tagsContainer').data('api-url');
+    $.ajax({
+      url: apiUrl,
+      method: 'GET',
+      data: { ...filtro, offset, limit },
+      success: function(response){
+        if(response && response.estado){
+          if(response.data.tags && response.data.tags.length > 0){
+            $('#noTagsMsg').addClass('d-none');
+            if(!$('#tagsList').length){
+              $('#tagsContainer').html('<div class="list-group" id="tagsList"></div>');
+            }
+            response.data.tags.forEach(t => { appendTag(t); });
+          } else if(offset === 0){
+            $('#noTagsMsg').removeClass('d-none');
+          }
+        } else {
+          alert(response?.msg || 'Error al obtener tags');
+        }
+      },
+    })
+  }
+
+  $(document).on('input', '#tagsSearch', function(e) {
+    const val = e.target.value.trim();
+    if(val.length >= 3 || val.length === 0){
+      $('#tagsList').empty();
+      obtenerTags(val.length >= 3 ? { q: val } : {}, 0, Number($('#tagsContainer').data('limit') || 10));
+    }
   });
 
-  $('.btnDeleteTag').on('click', function() {
+  $(document).on('click', '#tagsLoadMore', function() {
+    const currentCount = $('#tagsList .list-group-item').length;
+    const searchTerm = $('#tagsSearch').val().trim();
+    obtenerTags(searchTerm.length >= 3 ? { q: searchTerm } : {}, currentCount, Number($('#tagsContainer').data('limit') || 10));
+  });
+
+  $(document).on('click', '.btnDeleteTag', function() {
     const id = $(this).data('id');
     const nombre = $(this).data('nombre');
     if (!confirm(`Eliminar tag "${nombre}" ?`)) return;
@@ -142,75 +189,10 @@
       url: `{{ url_for('tag.eliminar_tag', tag_id='') }}/${id}`,
       method: 'DELETE'
     })
-    .done(function() {
-      location.reload();
-    })
-    .fail(function(jqXHR) {
-      const j = jqXHR.responseJSON || {};
-      alert(j.message || 'Error');
-    });
+    .done(function() { location.reload(); })
+    .fail(function(jqXHR) { const j = jqXHR.responseJSON || {}; alert(j.message || 'Error'); });
   });
-
-  // Lazy load y buscador
-  const apiUrl = '{{ url_for("tag.obtener_tags") }}';
-  let offset = {{ (initial_limit | default(10)) | tojson }};
-  const limit = {{ (initial_limit | default(10)) | tojson }};
-  let q = '';
-
-  // Debounce helper
-  function debounce(fn, wait){
-    let t = null;
-    return function(){
-      const args = arguments;
-      const ctx = this;
-      clearTimeout(t);
-      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
-    };
-  }
-
-  function appendTag(t){
-    const html = `
-      <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${t._id}">
-        <div>
-          <div class="fw-semibold">${t.nombre}</div>
-          <div class="text-muted small">${t.descripcion || ''}</div>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-outline-secondary btnEditTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}" data-descripcion="${(t.descripcion||'').replace(/"/g,'\"')}">Editar</button>
-          <button class="btn btn-sm btn-outline-danger btnDeleteTag" data-id="${t._id}" data-nombre="${(t.nombre||'').replace(/"/g,'\"')}">Eliminar</button>
-        </div>
-      </div>`;
-    $('#tagsList').append(html);
-  }
-
-  $('#tagsLoadMore').on('click', function(){
-    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-      .done(function(r){
-        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
-        const items = r.data.tags || [];
-        if(items.length === 0){ $('#tagsLoadMore').prop('disabled', true).text('No hay más'); return; }
-        items.forEach(appendTag);
-        offset += items.length;
-      })
-      .fail(function(){ alert('Error al cargar más tags'); });
-  });
-
-  const performTagsSearch = function(){
-    const term = $('#tagsSearch').val().trim();
-    if(term.length < 3){ return; }
-    q = term; offset = 0; $('#tagsList').empty(); $('#tagsLoadMore').prop('disabled', false).text('Cargar más');
-    $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-      .done(function(r){
-        if(!r || !r.estado) { alert(r.msg || 'Error'); return; }
-        const items = r.data.tags || [];
-        if(items.length === 0){ $('#noTagsMsg').show(); $('#tagsLoadMore').prop('disabled', true).text('No hay más'); return; }
-        $('#noTagsMsg').hide(); items.forEach(appendTag); offset += items.length;
-      })
-      .fail(function(){ alert('Error en la búsqueda'); });
-  };
-
-  const debouncedTagsSearch = debounce(performTagsSearch, 300);
-  $('#tagsSearch').on('input', debouncedTagsSearch);
-  $('#tagsSearchBtn').on('click', performTagsSearch);
+});
 </script>
+
 {% endblock %}

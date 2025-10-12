@@ -26,7 +26,7 @@ class LibroModeloDTO:
     _id: str
     titulo: str
     autor: str
-    genero: str
+    genero: List[str]
     año_publicacion: int
     editorial: str
     isbn: str
@@ -53,5 +53,4 @@ class FiltroLibroModelo:
     idioma: str = None
     origen_pais: str = None
     disponible: bool = None
-    calificacion_min: float = None
     tags: List[str] = None

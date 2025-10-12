@@ -27,7 +27,7 @@ class TagControlador:
 
             tags = self.app.obtenerTags(offset=offset, limit=limit, q=q)
             tags_dict = [t.__dict__ for t in tags]
-            return jsonify(ResponseApi.exito({'tags': tags_dict, 'total': len(tags_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
+            return jsonify(ResponseApi.exito('Tags obtenidos',{'tags': tags_dict, 'total': len(tags_dict), 'offset': offset, 'limit': limit, 'q': q}))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 
@@ -51,7 +51,7 @@ class TagControlador:
             validated = schema.load(data)
             tag_id = self.app.crearTag(validated)
             if request.is_json:
-                return jsonify(ResponseApi.exito({'tag_id': tag_id}, 201))
+                return jsonify(ResponseApi.exito({'mensaje': 'Tag creado', 'tag_id': tag_id}))
             flash('Tag creado', 'success')
             return redirect(url_for('tag.lista_tags_web'))
         except ValidationError as ve:
@@ -68,7 +68,7 @@ class TagControlador:
             schema = TagSchema()
             validated = schema.load(data)
             modified = self.app.actualizarTag(tag_id, validated)
-            return jsonify(ResponseApi.exito({'modified': modified}, 200))
+            return jsonify(ResponseApi.exito('Tag actualizado',{'modified': modified}))
         except ValidationError as ve:
             return jsonify(ResponseApi.error(str(ve.messages), 400))
         except Exception as e:
@@ -77,7 +77,7 @@ class TagControlador:
     def eliminarTag(self, tag_id: str):
         try:
             success = self.app.eliminarTag(tag_id)
-            return jsonify(ResponseApi.exito({'deleted': success}, 200))
+            return jsonify(ResponseApi.exito('Tag eliminado',{'deleted': success}))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 

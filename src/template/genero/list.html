@@ -11,7 +11,6 @@
 
         <div class="mb-3 d-flex">
             <input id="generosSearch" class="form-control me-2" placeholder="Buscar géneros..." />
-            <button id="generosSearchBtn" class="btn btn-outline-primary">Buscar</button>
         </div>
 
         <div id="noGenerosMsg" class="alert alert-warning" style="display:none">No hay géneros.</div>
@@ -32,7 +31,7 @@
         </div>
 
         <div class="mt-3 text-center">
-            <button id="generosLoadMore" class="btn btn-secondary">Cargar más</button>
+            <button id="generosLoadMore" class="btn btn-outline-primary">Cargar más</button>
         </div>
 </div>
 {% endblock %}
@@ -146,13 +145,9 @@
                 });
             }
         });
-
-        // Lazy load + search (moved outside delete handler)
-        (function(){
-            const apiUrl = '{{ url_for("genero.obtenerGeneros") }}';
-            let offset = {{ (initial_limit | default(10)) | tojson }};
-            const limit = {{ (initial_limit | default(10)) | tojson }};
-            let q = '';
+        let offset = 0;
+        const limit = 10;
+        let q = '';
 
             function appendGenero(g){
                 const html = `
@@ -169,32 +164,6 @@
                 $('#generosList').append(html);
             }
 
-            function showNoResults(show){
-                if(show) $('#noGenerosMsg').show(); else $('#noGenerosMsg').hide();
-            }
-
-            function loadItems(reset){
-                $.getJSON(apiUrl, { offset: offset, limit: limit, q: q })
-                    .done(function(r){
-                        if(!r || !r.estado){ alert(r.msg || 'Error'); return; }
-                        const items = r.data.generos || [];
-                        if(reset) $('#generosList').empty();
-                        if(items.length === 0){
-                            if(reset) showNoResults(true);
-                            $('#generosLoadMore').prop('disabled', true).text('No hay más');
-                            return;
-                        }
-                        showNoResults(false);
-                        items.forEach(appendGenero);
-                        offset += items.length;
-                    })
-                    .fail(function(){ alert('Error al cargar géneros'); });
-            }
-
-            $('#generosLoadMore').on('click', function(){
-                loadItems(false);
-            });
-
             // debounce helper
             function debounce(fn, wait){
                 let t;
@@ -206,29 +175,49 @@
                 };
             }
 
-            const doSearch = function(){
-                const term = $('#generosSearch').val().trim();
-                if(term.length === 0){
-                    // reset to initial list
-                    q = '';
-                    offset = 0;
-                    $('#generosLoadMore').prop('disabled', false).text('Cargar más');
-                    loadItems(true);
-                    return;
-                }
-                if(term.length < 3){
-                    // wait for more chars
-                    return;
-                }
-                q = term; offset = 0; $('#generosLoadMore').prop('disabled', false).text('Cargar más');
-                loadItems(true);
-            };
+            function obtenerGeneros(filtro= {}, offset = 0, limit = 10){
+                const apiUrl = '{{ url_for("genero.obtener_generos") }}';
+                $.ajax({
+                    url: apiUrl,
+                    method: 'GET',
+                    data: { ...filtro, offset, limit },
+                    success: function(response){
+                        console.log('Generos response:', response);
+                        if(response && response.estado){
+                            if(response.data.generos.length > 0){
+                                $('#noGenerosMsg').addClass('d-none');
+                                if(!$('#generosList').length){
+                                    $('#generosContainer').html('<div class="list-group" id="generosList"></div>');
+                                }
+                                response.data.generos.forEach(g => {
+                                    appendGenero(g);
+                                });
+                            } else if(offset === 0){
+                                $('#noGenerosMsg').removeClass('d-none');
+                            }
+                        } else {
+                            alert(response?.msg || 'Error al obtener géneros');
+                        }
+                    },
+                })
+            }
 
-            const debouncedSearch = debounce(doSearch, 300);
+            $('#generosLoadMore').on('click', function() {
+                const currentCount = $('#generosList .list-group-item').length;
+                const searchTerm = $('#generosSearch').val().trim();
+                obtenerGeneros(searchTerm.length >= 3 ? { q: searchTerm } : {}, currentCount, limit);
+            });
 
-            $('#generosSearch').on('input', debouncedSearch);
-            $('#generosSearchBtn').on('click', function(){ doSearch(); });
-        })();
+            $(document).on('input', '#generosSearch', function(e) {
+                const val = e.target.value.trim();
+                if(val.length >= 3 || val.length === 0){
+                    $('#generosList').empty();
+                    debounce(function(){
+                        obtenerGeneros(val.length >= 3 ? { q: val } : {}, 0, limit);
+                    }, 300)();
+                }
+            });
+       
     });
 </script>
 {% endblock %}

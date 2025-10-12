@@ -104,7 +104,7 @@
                     <a class="nav-link mb-1 {% if request.path.startswith('/dashboard') %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
                     <a class="nav-link mb-1 {% if request.path.startswith('/libro') %}active{% endif %}" href="{{ url_for('libro.lista_libros_web') }}"><i class="bi bi-book me-2"></i> Libros</a>
                     <!-- <a class="nav-link mb-1" href="{{ url_for('libro.crear_libro_web') }}"><i class="bi bi-plus-circle me-2"></i> Agregar libro</a> -->
-                    <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-bookmarks me-2"></i> Categorías</a>
+                    <!-- <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-bookmarks me-2"></i> Categorías</a> -->
                     <a class="nav-link mb-1 {% if request.path.startswith('/genero') %}active{% endif %}" href="{{ url_for('genero.lista_generos_web') }}"><i class="bi bi-collection me-2"></i> Géneros</a>
                     <a class="nav-link mb-1 {% if request.path.startswith('/tag') %}active{% endif %}" href="{{ url_for('tag.lista_tags_web') }}"><i class="bi bi-tag me-2"></i> Tags</a>
                     <a class="nav-link mb-1 {% if request.path.startswith('/idioma') %}active{% endif %}" href="{{ url_for('idioma.lista_idiomas_web') }}"><i class="bi bi-translate me-2"></i> Idiomas</a>
@@ -129,7 +129,6 @@
                                 <div class="text-muted small">{{ session.get('rol') or 'Usuario' }}</div>
                             </div>
                         {% endif %}
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm d-none d-lg-inline">Iniciar sesión</a>
                     </div>
                 </header>
 

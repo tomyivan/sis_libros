@@ -46,7 +46,7 @@ class LibroApp:
                 lim = 10
             end = start + lim
             return resultados[start:end]
-        
+
         # No búsqueda textual: pasar offset/limit al servicio para que lo propague al repositorio
         return self.obtener_libro_srv.obtenerLibros(filtro, offset=offset, limit=limit)
 
@@ -61,15 +61,8 @@ class LibroApp:
         """Actualizar un libro existente"""
         return self.actualizar_libro_srv.actualizarLibro(libro_id, libro_data)
 
-    def calificarLibro(self, libro_id: str, calificacion: float) -> int:
-        """Agregar una calificación a un libro"""
-        return self.actualizar_libro_srv.actualizarCalificacion(libro_id, calificacion)
 
     def eliminarLibro(self, libro_id: str) -> bool:
         """Eliminar (desactivar) un libro"""
         return self.eliminar_libro_srv.eliminarLibro(libro_id)
-
-    def reactivarLibro(self, libro_id: str) -> bool:
-        """Reactivar un libro previamente eliminado"""
-        return self.eliminar_libro_srv.reactivarLibro(libro_id)
 

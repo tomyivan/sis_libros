@@ -74,7 +74,6 @@ class LibroControlador:
 
             # Búsqueda por texto genérico (q)
             q = request.args.get('q')
-
             libros = self.app.obtenerLibros(filtros if filtros else None, offset=offset, limit=limit, q=q)
 
             # Convertir a dict para JSON

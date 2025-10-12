@@ -76,7 +76,7 @@
               <select id="genero_select" multiple class="form-select {% if errors and errors.get('genero') %}is-invalid{% endif %}" aria-label="Selecciona géneros">
                 {% if generos %}
                   {% for g in generos %}
-                    <option value="{{ g.nombre }}" {% if data and data.genero and (g.nombre in (data.genero.split(',') if data.genero else [])) %}selected{% endif %}>{{ g.nombre }}</option>
+                    <option value="{{ g.nombre }}" {% if data and data.genero and (g.nombre in (data.genero if data.genero else [])) %}selected{% endif %}>{{ g.nombre }}</option>
                   {% endfor %}
                 {% endif %}
               </select>
@@ -182,12 +182,45 @@ $(function(){
     try{
       if(typeof window.$ === 'undefined' || !window.$) return;
       if(!$.fn || !$.fn.select2) return;
+      var $g = $('#genero_select');
+      if ($g.length && !$g.data('select2')) {
+        $g.select2({placeholder:'Selecciona géneros', width:'100%'});
+        // set initial values from selected options or hidden input
+        try{
+          var initG = $g.find('option:selected').map(function(){ return this.value; }).get();
+          if(!initG || initG.length === 0){
+            var hidden = $('#genero').val() || '';
+            initG = hidden ? hidden.split(',').map(function(x){ return x.trim(); }).filter(Boolean) : [];
+          }
+          if(initG && initG.length) { $g.val(initG).trigger('change'); }
+        }catch(e){/* ignore */}
+      }
 
-      var $g = $('#genero_select'); if ($g.length && !$g.data('select2')) $g.select2({placeholder:'Selecciona géneros', width:'100%'});
-      var $t = $('#tags_select'); if ($t.length && !$t.data('select2')) $t.select2({tags:true, tokenSeparators:[','], width:'100%'});
-      var $i = $('#idioma_select'); if ($i.length && !$i.data('select2')) $i.select2({placeholder:'Selecciona un idioma', width:'100%'});
-      var $c = $('#categoria_select'); if ($c.length && !$c.data('select2')) $c.select2({placeholder:'Selecciona una categoría', allowClear:true, width:'100%'});
-      var $p = $('#origen_select'); if ($p.length && !$p.data('select2')) $p.select2({placeholder:'Selecciona un país', width:'100%'});
+      var $t = $('#tags_select');
+      if ($t.length && !$t.data('select2')) {
+        $t.select2({tags:true, tokenSeparators:[','], width:'100%'});
+        // for tags, ensure hidden CSV values become selected tags (add missing options)
+        try{
+          var hiddenTags = ($('#tags').val() || '').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+          var selected = $t.find('option:selected').map(function(){ return this.value; }).get() || [];
+          var toSet = selected.length ? selected : hiddenTags;
+          if(toSet && toSet.length){
+            toSet.forEach(function(tag){
+              if($t.find('option[value="'+tag.replace(/"/g,'\"')+'"]').length === 0){
+                var newOpt = new Option(tag, tag, true, true);
+                $t.append(newOpt);
+              } else {
+                $t.find('option').filter(function(){ return this.value === tag; }).prop('selected', true);
+              }
+            });
+            $t.trigger('change');
+          }
+        }catch(e){/* ignore */}
+      }
+
+      var $i = $('#idioma_select'); if ($i.length && !$i.data('select2')) { $i.select2({placeholder:'Selecciona un idioma', width:'100%'}); try{ var sv = $i.find('option:selected').val(); if(sv) $i.val(sv).trigger('change'); }catch(e){} }
+      var $c = $('#categoria_select'); if ($c.length && !$c.data('select2')) { $c.select2({placeholder:'Selecciona una categoría', allowClear:true, width:'100%'}); try{ var cv = $c.find('option:selected').val(); if(cv) $c.val(cv).trigger('change'); }catch(e){} }
+      var $p = $('#origen_select'); if ($p.length && !$p.data('select2')) { $p.select2({placeholder:'Selecciona un país', width:'100%'}); try{ var pv = $p.find('option:selected').val(); if(pv) $p.val(pv).trigger('change'); }catch(e){} }
     }catch(e){ console.warn('initSelect2_local error', e); }
   }
   // Expose globally

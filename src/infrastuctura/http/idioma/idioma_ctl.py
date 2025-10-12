@@ -26,7 +26,7 @@ class IdiomaControlador:
 
             idiomas = self.app.obtenerIdiomas(offset=offset, limit=limit, q=q)
             idiomas_dict = [p.__dict__ for p in idiomas]
-            return jsonify(ResponseApi.exito({'idiomas': idiomas_dict, 'total': len(idiomas_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
+            return jsonify(ResponseApi.exito('idiomas Obtenidos',{'idiomas': idiomas_dict, 'total': len(idiomas_dict), 'offset': offset, 'limit': limit, 'q': q}))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 

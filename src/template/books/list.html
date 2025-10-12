@@ -21,6 +21,20 @@
     .card-badges { gap: .25rem; display:flex; flex-wrap:wrap; }
     .card-description { height: 3.6rem; overflow: hidden; text-overflow: ellipsis; }
     .rating-stars { color: #f6b01e; }
+    /* Icon button styles */
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(16,24,40,0.04);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .btn-icon:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(16,24,40,0.08); }
+    .btn-icon svg { width: 18px; height: 18px; }
   </style>
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Libros</h2>
@@ -55,11 +69,23 @@
               </div>
               <p class="card-description text-muted small">{{ libro.get('descripcion')[:120] if libro.get('descripcion') else '' }}</p>
               <div class="mt-auto">
-                <div class="btn-group" role="group">
-                  <button class="btn btn-sm btn-outline-primary" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" onclick="openDetailModal(this.dataset.id)">Ver</button>
-                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id={{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}">Editar</a>
-                  <button class="btn btn-sm btn-outline-danger" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">Eliminar</button>
-                  <button class="btn btn-sm btn-outline-success" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openRateModal(this.dataset.id, this.dataset.title)">Calificar</button>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-icon btn-outline-primary" title="Ver" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" onclick="openDetailModal(this.dataset.id)">
+                    <!-- eye icon -->
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <a class="btn btn-icon btn-outline-secondary" title="Editar" href="{{ url_for('libro.crear_libro_web') }}?edit_id={{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}">
+                    <!-- edit icon -->
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3-1 11-11 1-3-3 1L4 20z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </a>
+                  <button class="btn btn-icon btn-outline-danger" title="Eliminar" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">
+                    <!-- trash icon -->
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 6V4h8v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <button class="btn btn-icon btn-outline-success" title="Calificar" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openRateModal(this.dataset.id, this.dataset.title)">
+                    <!-- star icon -->
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -91,7 +117,20 @@
         if (response.data.libros && response.data.libros.length > 0) {
           $('#noBooksMsg').addClass('d-none');
           response.data.libros.forEach(libro => {
-            const libroHtml = `
+            appendLibro(libro);
+          });
+        } else if (offset === 0) {
+          $('#noBooksMsg').removeClass('d-none');
+        }
+      },
+      error: function() {
+        alert('Error al obtener los libros.');
+      }
+    });
+  }
+
+  function appendLibro(libro) {
+    const libroHtml = `
               <div class="col-sm-6 col-md-4 mb-4" data-id="${libro._id || libro.id || libro.id_libro}">
                 <div class="card h-100 book-card">
                   ${libro.portada_url ? `<img src="${libro.portada_url}" class="card-img-top book-card-img" alt="${libro.titulo}">` : `<div class="book-card-img d-flex align-items-center justify-content-center text-muted">No disponible</div>`}
@@ -106,12 +145,19 @@
                     <p class="card-description text-muted small">${libro.descripcion ? libro.descripcion.substring(
 0, 120) : ''}</p>
                     <div class="mt-auto">
-                      <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-primary" data-id="${libro._id || libro.id || libro.id_libro}" onclick="openDetailModal(this.dataset.id)">Ver</button>
-                        <a class="btn btn-sm
-  btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id=${libro._id || libro.id || libro.id_libro}">Editar</a>
-                        <button class="btn btn-sm btn-outline-danger" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">Eliminar</button>
-                        <button class="btn btn-sm btn-outline-success" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openRateModal(this.dataset.id, this.dataset.title)">Calificar</button>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-icon btn-outline-primary" title="Ver" data-id="${libro._id || libro.id || libro.id_libro}" onclick="openDetailModal(this.dataset.id)">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <a class="btn btn-icon btn-outline-secondary" title="Editar" href="{{ url_for('libro.crear_libro_web') }}?edit_id=${libro._id || libro.id || libro.id_libro}">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3-1 11-11 1-3-3 1L4 20z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <button class="btn btn-icon btn-outline-danger" title="Eliminar" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openConfirmDelete(this.dataset.id, this.dataset.title)">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 6V4h8v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="btn btn-icon btn-outline-success" title="Calificar" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openRateModal(this.dataset.id, this.dataset.title)">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -119,24 +165,32 @@
               </div>`;
             console.log(libroHtml);
             $('#booksList').append(libroHtml);
-          });
-        } else if (offset === 0) {
-          $('#noBooksMsg').removeClass('d-none');
-        }
-      },
-      error: function() {
-        alert('Error al obtener los libros.');
-      }
-    });
   }
 
-  $(document).on('keyup', '#booksSearch', function() {
-    const buscar = $(this).val();
+  // debounce helper
+  function debounce(fn, wait) {
+    let t;
+    return function() {
+      const args = arguments;
+      const ctx = this;
+      clearTimeout(t);
+      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+    };
+  }
+
+  const doSearch = function() {
+    const buscar = $('#booksSearch').val();
     if (buscar.length >= 3 || buscar.length === 0) {
       $('#booksList').empty();
       obtenerLibros({ titulo: buscar }, 0, 6);
     }
-  });
+  };
+
+  const debouncedSearch = debounce(doSearch, 300);
+
+  // wire debounced input and immediate Enter
+  $(document).on('input', '#booksSearch', debouncedSearch);
+  $(document).on('keydown', '#booksSearch', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doSearch(); } });
 
 
   $(document).on('click', '#booksLoadMore', function() {

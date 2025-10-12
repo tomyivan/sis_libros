@@ -26,7 +26,7 @@ class PaisControlador:
 
             paises = self.app.obtenerPaises(offset=offset, limit=limit, q=q)
             paises_dict = [p.__dict__ for p in paises]
-            return jsonify(ResponseApi.exito({'paises': paises_dict, 'total': len(paises_dict), 'offset': offset, 'limit': limit, 'q': q}, 200))
+            return jsonify(ResponseApi.exito('paises encontrados',{'paises': paises_dict, 'total': len(paises_dict), 'offset': offset, 'limit': limit, 'q': q}))
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
 
@@ -50,12 +50,10 @@ class PaisControlador:
             pais_id = self.app.crearPais(validated)
             if request.is_json:
                 return jsonify(ResponseApi.exito({'pais_id': pais_id}, 201))
-            flash('País creado', 'success')
             return redirect(url_for('pais.lista_paises_web'))
         except ValidationError as ve:
             if request.is_json:
                 return jsonify(ResponseApi.error(str(ve.messages), 400))
-            flash(f'Error: {ve.messages}', 'warning')
             return render_template('pais/create.html', data=data, errors=ve.messages)
         except Exception as e:
             return jsonify(ResponseApi.error(str(e), 500))
