@@ -221,7 +221,16 @@
                 const RECOM_URLS = {
                     delete: "{{ url_for('libro.eliminar_libro', libro_id='__ID__') }}",
                     get: "{{ url_for('libro.obtener_libro_web', libro_id='__ID__') }}",
+                    // comentarios
+                    comentario_create: "{{ url_for('comentario.crear_comentario') }}",
+                    comentario_get: "{{ url_for('comentario.obtener_comentarios') }}",
+                    // calificaciones
+                    rate_get: "{{ url_for('calificacion.obtener_calificaciones') }}",
+                    rate_create: "{{ url_for('calificacion.crear_calificacion') }}",
+                    rate_update: "{{ url_for('calificacion.actualizar_calificacion', calificacionId='__ID__') }}"
                 };
+
+                const CURRENT_USER_ID = "{{ session.get('user_id') or '' }}";
 
                 // Modal helpers
                 function openDetailModal(id){
@@ -269,18 +278,83 @@
                     modal.show();
                 }
 
-                // function openRateModal(id, title){
-                //     document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
-                //     document.getElementById('rateSubmit').onclick = function(){
-                //         const val = parseFloat(document.getElementById('rateValue').value);
-                //         if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                //         $.ajax({ url: RECOM_URLS.rate.replace('__ID__', id), method: 'POST', contentType: 'application/json', data: JSON.stringify({calificacion: val}) })
-                //           .done(function(){ location.reload(); })
-                //           .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al calificar'); });
-                //     };
-                //     const modal = new bootstrap.Modal(document.getElementById('rateModal'));
-                //     modal.show();
-                // }
+                function openCommentModal(id, title){
+                    document.getElementById('commentModalLabel').innerText = `Comentar: ${title}`;
+                    document.getElementById('commentLibroId').value = id;
+                    document.getElementById('commentText').value = '';
+                    const btn = document.getElementById('commentSubmit');
+                    btn.onclick = function(){
+                        const comentario = document.getElementById('commentText').value.trim();
+                        if(!comentario){ alert('Ingrese un comentario'); return; }
+                        btn.disabled = true;
+                        $.ajax({
+                            url: RECOM_URLS.comentario_create,
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, comentario: comentario })
+                        }).done(function(){ location.reload(); })
+                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear comentario'); })
+                          .always(function(){ btn.disabled = false; });
+                    };
+                    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+                    modal.show();
+                }
+
+                function openRateModal(id, title){
+                    document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
+                    const btn = document.getElementById('rateSubmit');
+                    const input = document.getElementById('rateValue');
+                    input.value = '5.0';
+                    // fetch existing rating for current user
+                    $.getJSON(RECOM_URLS.rate_get + '?idUsuario=' + encodeURIComponent(CURRENT_USER_ID) + '&idLibro=' + encodeURIComponent(id))
+                      .done(function(resp){
+                          const payload = resp?.data || resp;
+                          if(payload){
+                              // if DTO or dict
+                              const existing = payload;
+                              if(existing.calificacion !== undefined){
+                                  input.value = existing.calificacion;
+                              }
+                              // if there is an _id, we'll use update endpoint
+                              if(existing._id){
+                                  btn.onclick = function(){
+                                      const val = parseFloat(input.value);
+                                      if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
+                                      btn.disabled = true;
+                                      $.ajax({ url: RECOM_URLS.rate_update.replace('__ID__', existing._id), method: 'PUT', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                                        .done(function(){ location.reload(); })
+                                        .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al actualizar calificación'); })
+                                        .always(function(){ btn.disabled = false; });
+                                  };
+                              } else {
+                                  // no existing id -> create
+                                  btn.onclick = function(){
+                                      const val = parseFloat(input.value);
+                                      if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
+                                      btn.disabled = true;
+                                      $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                                        .done(function(){ location.reload(); })
+                                        .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
+                                        .always(function(){ btn.disabled = false; });
+                                  };
+                              }
+                          }
+                      })
+                      .fail(function(){
+                          // on fail assume no existing and set create
+                          btn.onclick = function(){
+                              const val = parseFloat(input.value);
+                              if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
+                              btn.disabled = true;
+                              $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                                .done(function(){ location.reload(); })
+                                .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
+                                .always(function(){ btn.disabled = false; });
+                          };
+                      });
+                    const modal = new bootstrap.Modal(document.getElementById('rateModal'));
+                    modal.show();
+                }
             </script>
 
             <!-- Detail Modal -->
@@ -336,6 +410,29 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button id="rateSubmit" type="button" class="btn btn-success">Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comment Modal -->
+            <div class="modal fade" id="commentModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="commentModalLabel">Comentar libro</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="commentLibroId" />
+                            <div class="mb-3">
+                                <label class="form-label">Comentario</label>
+                                <textarea id="commentText" class="form-control" rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button id="commentSubmit" type="button" class="btn btn-primary">Enviar</button>
                         </div>
                     </div>
                 </div>

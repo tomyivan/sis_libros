@@ -9,6 +9,8 @@ from src.infrastuctura.http.idioma.idioma_ruta import idiomaRuta, init_idioma_ro
 from src.infrastuctura.http.autenticacion.auth_ctl import AuthControlador
 from src.infrastuctura.http.genero.genero_ruta import generoRuta, init_genero_routes
 from src.infrastuctura.http.historial.historial_ruta import historialRuta, init_historial_routes
+from src.infrastuctura.http.comentario.comentario_ruta import comentarioRuta, init_comentario_routes
+from src.infrastuctura.http.calificacion.calificacion_ruta import calificacionRuta, init_calificacion_routes
 from src.custom.error_custom import APIError
 from src.util.responseApi import ResponseApi
 import dotenv
@@ -39,6 +41,10 @@ init_pais_routes()
 init_idioma_routes()
 # Inicializar dependencias de historial
 init_historial_routes()
+# Inicializar dependencias de comentarios (wires controlador)
+init_comentario_routes()
+# Inicializar dependencias de calificaciones (wires controlador y registra blueprint)
+init_calificacion_routes()
 # Registrar blueprints
 app.register_blueprint(authRuta)
 app.register_blueprint(usuarioRuta)
@@ -49,6 +55,8 @@ app.register_blueprint(generoRuta)
 app.register_blueprint(paisRuta)
 app.register_blueprint(idiomaRuta)
 app.register_blueprint(historialRuta)
+app.register_blueprint(comentarioRuta)
+app.register_blueprint(calificacionRuta)
 # Inicializar controlador de auth para rutas globales
 auth_controller = AuthControlador()
 

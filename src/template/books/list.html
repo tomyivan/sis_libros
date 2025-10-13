@@ -86,6 +86,10 @@
                     <!-- star icon -->
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </button>
+                  <button class="btn btn-icon btn-outline-info" title="Comentar" data-id="{{ libro.get('_id') or libro.get('id') or libro.get('id_libro') }}" data-title="{{ libro.get('titulo')|e }}" onclick="openCommentModal(this.dataset.id, this.dataset.title)">
+                    <!-- comment icon -->
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v12H4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16l-2 2v-2h2z" fill="currentColor"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -158,6 +162,7 @@
                         <button class="btn btn-icon btn-outline-success" title="Calificar" data-id="${libro._id || libro.id || libro.id_libro}" data-title="${libro.titulo}" onclick="openRateModal(this.dataset.id, this.dataset.title)">
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
+                        
                       </div>
                     </div>
                   </div>
