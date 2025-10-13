@@ -54,3 +54,22 @@ class FiltroLibroModelo:
     origen_pais: str = None
     disponible: bool = None
     tags: List[str] = None
+
+@dataclass
+class LibroInformacion:
+    _id: str
+    titulo: str
+    autor: str
+    genero: List[str]
+    año_publicacion: int
+    editorial: str
+    isbn: str
+    paginas: int
+    idioma: str
+    descripcion: str
+    origen_pais: str
+    disponible: bool
+    portada_url: Optional[str] = None
+    tags: Optional[List[str]] = None
+    calificacion_promedio: Optional[float] = None
+    comentarios: List[dict] = None

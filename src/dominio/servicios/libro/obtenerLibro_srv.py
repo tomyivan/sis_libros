@@ -6,6 +6,16 @@ class ObtenerLibroServicio:
     def __init__(self, repositorio: libro_prt.LibroPuerto):
         self.repositorio = repositorio
 
+    def obtenerLibroInfo(self, libro_id: str) -> libro_mod.LibroInformacion:
+        """Obtener información detallada de un libro por su ID, incluyendo estadísticas agregadas."""
+        # print("Obteniendo información del libro:", libro_id)
+        libro = self.repositorio.obtenerLibroInfo(libro_id)
+
+        if libro:
+            libro['_id'] = str(libro['_id'])  # Convertir ObjectId a str
+            return libro_mod.LibroInformacion(**libro)
+        return None
+
     def obtenerLibro(self, libro_id: str) -> libro_mod.LibroModeloDTO:
         """Obtener un libro por ID"""
         filtro = libro_mod.FiltroLibroModelo(_id = libro_id)

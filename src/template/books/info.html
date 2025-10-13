@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle del libro{% endblock %}
+
+{% block content %}
+  {% set libro = data.data if data and data.data else data if data else libro if libro else {} %}
+
+    <div class="container book-info-wrap">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/book-info.css') }}">
+
+      <div class="row justify-content-center">
+
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-sm border-0 book-card">
+          <div class="row g-0">
+            <div class="col-md-4 cover-col">
+              {% if libro.portada_url %}
+                <img src="{{ libro.portada_url }}" alt="Portada {{ libro.titulo }}" class="img-fluid cover-img" />
+              {% else %}
+                <div class="text-center text-muted">
+                  <i class="bi bi-book" style="font-size:64px;"></i>
+                  <div>No hay portada</div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-8 p-4">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="history.back();" aria-label="Volver">
+                    <i class="bi bi-arrow-left"></i> Volver
+                  </button>
+                </div>
+                <div class="text-end">
+                  <!-- espacio para futuras acciones sin tocar datos -->
+                </div>
+              </div>
+              <div class="title-area">
+                <h1>{{ libro.titulo }}</h1>
+                <div class="meta">por <strong>{{ libro.autor }}</strong> · <small>{{ libro.origen_pais }}</small></div>
+              </div>
+
+              <div class="mb-3">
+                {% if libro.genero %}
+                    {% for g in libro.genero %}
+                      <span class="badge-genre">{{ g }}</span>
+                    {% endfor %}
+                {% endif %}
+                {% if libro.disponible %}
+                  <span class="badge bg-success ms-2">Disponible</span>
+                {% else %}
+                  <span class="badge bg-danger ms-2">No disponible</span>
+                {% endif %}
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-sm-6 col-md-3">
+                  <div class="small text-muted">Año</div>
+                  <div class="fw-semibold">{{ libro.año_publicacion }}</div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                  <div class="small text-muted">Páginas</div>
+                  <div class="fw-semibold">{{ libro.paginas if libro.paginas is defined else '' }}</div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                  <div class="small text-muted">Idioma</div>
+                  <div class="fw-semibold">{{ libro.idioma }}</div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                  <div class="small text-muted">ISBN</div>
+                  <div class="fw-semibold">{{ libro.isbn }}</div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="small text-muted">Editorial</div>
+                <div class="fw-semibold">{{ libro.editorial }}</div>
+              </div>
+
+              <div class="mb-3 tags">
+                <div class="small text-muted">Tags</div>
+                <div>
+                  {% if libro.tags %}
+                    {% for t in libro.tags %}
+                      <span class="badge bg-secondary bg-opacity-10 text-secondary me-1">{{ t }}</span>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+
+              <hr />
+
+              <h5>Descripción</h5>
+              <p class="text-muted">{{ libro.descripcion }}</p>
+
+              <div class="mt-4">
+                <h5>Calificación</h5>
+                {% if libro.calificacion_promedio %}
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="me-2" aria-hidden="true">
+                      {% set full = (libro.calificacion_promedio|round(0, 'floor'))|int %}
+                      {% for i in range(full) %}
+                        <i class="bi bi-star-fill text-warning star-anim{% if i == 0 %} pulse{% endif %}"></i>
+                      {% endfor %}
+                      {% for i in range(5-full) %}
+                        <i class="bi bi-star text-muted"></i>
+                      {% endfor %}
+                    </div>
+                    <div class="small text-muted">{{ libro.calificacion_promedio }}/5</div>
+                  </div>
+                {% else %}
+                  <div class="small text-muted mb-2">Aún no tiene calificaciones</div>
+                {% endif %}
+              </div>
+
+              <div class="mt-4">
+                <h5>Comentarios <small class="text-muted">({{ libro.comentarios|length if libro.comentarios is defined else 0 }})</small></h5>
+                {% if libro.comentarios and libro.comentarios|length > 0 %}
+                  <div class="list-group mt-2">
+                    {% for c in libro.comentarios %}
+                      <div class="list-group-item comment-item p-3 mb-2 rounded-3">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                          <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width:44px;height:44px;font-weight:700;">{{ (c.usuario_nombre or c.usuario or 'U')[0]|upper }}</div>
+                            <div>
+                              <h6 class="mb-0">{{ c.usuario_nombre if c.usuario_nombre else c.usuario if c.usuario else 'Usuario' }}</h6>
+                              <small class="text-muted">{{ c.fecha if c.fecha else '' }}</small>
+                            </div>
+                          </div>
+                          {% if c.calificacion is defined and c.calificacion %}
+                            <div class="text-warning">{{ '★' * (c.calificacion|int) }}{{ '☆' * (5 - (c.calificacion|int)) }}</div>
+                          {% endif %}
+                        </div>
+                        <p class="mb-0 mt-2 text-muted">{{ c.texto if c.texto else c.mensaje if c.mensaje else '' }}</p>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="small text-muted">No hay comentarios aún.</div>
+                {% endif %}
+              </div>
+
+              <script>
+                // Animación escalonada para comentarios
+                document.addEventListener('DOMContentLoaded', function(){
+                  const items = document.querySelectorAll('.comment-item');
+                  items.forEach((it, idx) => {
+                    setTimeout(()=> it.classList.add('enter'), idx * 80);
+                  });
+                });
+              </script>
+
+              <div class="mt-3 small text-muted">
+                <div><strong>ID:</strong> <code>{{ libro._id }}</code></div>
+                <div><strong>Origen:</strong> {{ libro.origen_pais }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

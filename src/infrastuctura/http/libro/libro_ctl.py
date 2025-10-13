@@ -43,6 +43,17 @@ class LibroControlador:
     def __init__(self, app: LibroApp):
         self.app = app
 
+    def obtenerLibroInfo(self, libro_id: str):
+        """Obtener información detallada de un libro por su ID, incluyendo estadísticas agregadas."""
+        try:
+            info = self.app.obtenerLibroInfo(libro_id)
+            if info:
+                return jsonify(ResponseApi.exito("Libro encontrado", info.__dict__))
+            else:
+                return jsonify(ResponseApi.error("Libro no encontrado"))
+        except Exception as e:
+            return jsonify(ResponseApi.error(f"Error al obtener información del libro: {str(e)}"))
+
     def obtenerLibros(self):
         """Obtener lista de libros con filtros opcionales"""
         try:
@@ -255,6 +266,21 @@ class LibroControlador:
 
 
     # --- Vistas web ---
+
+    def libro_web_view(self, libro_id: str):
+        """Renderiza la vista web detallada de un libro"""
+        try:
+            libro = self.app.obtenerLibroInfo(libro_id)
+            print(libro)
+            if libro:
+                return render_template('books/info.html', libro=libro.__dict__)
+            else:
+                flash("Libro no encontrado", 'warning')
+                return redirect(url_for('libro.lista_libros_web'))
+        except Exception as e:
+            flash(f"Error al obtener libro: {str(e)}", 'danger')
+            return redirect(url_for('libro.lista_libros_web'))
+
     def lista_libros(self):
         """Renderiza la lista de libros en una plantilla web"""
         try:
@@ -307,3 +333,5 @@ class LibroControlador:
                     data = libro.__dict__
                     return render_template('books/create.html', data=data, categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
             return render_template('books/create.html', categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
+        
+

@@ -15,7 +15,9 @@ def init_libro_routes():
     global libro_controlador
     libro_controlador = libro_dep.libro_controlador
 
-# Rutas de consulta
+
+
+
 @libroRuta.route('/obtener', methods=['GET'])
 @token_required
 def obtener_libros():
@@ -89,3 +91,8 @@ def crear_libro_web_post():
 def actualizar_libro_web(libro_id):
     return libro_controlador.actualizarLibro(libro_id)
 
+# Rutas de consulta
+@libroRuta.route('/info/<libro_id>', methods=['GET'])
+@token_required
+def obtener_libro_info(libro_id):
+    return libro_controlador.libro_web_view(libro_id)

@@ -1,9 +1,15 @@
 # Se define la interfaz para las operaciones relacionadas con libros.
 from abc import ABC, abstractmethod
-from src.dominio.modelos.libro_mod import LibroModelo, LibroModeloDTO, FiltroLibroModelo
+from src.dominio.modelos.libro_mod import LibroModelo, LibroModeloDTO, FiltroLibroModelo, LibroInformacion
 from typing import List
 
 class LibroPuerto(ABC):
+
+    @abstractmethod
+    def obtenerLibroInfo(self, idLibro: str) -> LibroInformacion:
+        """Obtener información detallada de un libro por su ID, incluyendo estadísticas agregadas."""
+        pass
+
     @abstractmethod
     def obtenerLibro(self, filtro: FiltroLibroModelo) -> LibroModeloDTO:
         """Obtener un libro específico por filtro"""

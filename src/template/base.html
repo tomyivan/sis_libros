@@ -233,29 +233,29 @@
                 const CURRENT_USER_ID = "{{ session.get('user_id') or '' }}";
 
                 // Modal helpers
-                function openDetailModal(id){
-                    const url = RECOM_URLS.get.replace('__ID__', id);
-                    $.getJSON(url)
-                      .done(function(data){
-                        const payload = data?.data || data;
-                        const libro = payload?.libro || payload;
-                        const body = document.getElementById('modalDetailBody');
-                        if(!libro){ body.innerHTML = '<p>No se pudo cargar el detalle.</p>'; }
-                        else{
-                            body.innerHTML = `
-                                <h5>${libro.titulo || libro['titulo'] || ''}</h5>
-                                <p class="mb-1"><strong>Autor:</strong> ${libro.autor || libro['autor'] || ''}</p>
-                                <p class="mb-1"><strong>Género:</strong> ${libro.genero || libro['genero'] || ''}</p>
-                                <p class="mb-1"><strong>Año:</strong> ${libro.año_publicacion || libro['año_publicacion'] || libro.anio_publicacion || ''}</p>
-                                <p class="mb-1"><strong>Editorial:</strong> ${libro.editorial || libro['editorial'] || ''}</p>
-                                <p class="mt-2">${libro.descripcion || libro['descripcion'] || ''}</p>
-                            `;
-                        }
-                        const modal = new bootstrap.Modal(document.getElementById('modalDetail'));
-                        modal.show();
-                      })
-                      .fail(function(jqXHR, textStatus, err){ alert('Error cargando detalles: ' + (err||textStatus)); });
-                }
+                // function openDetailModal(id){
+                //     const url = RECOM_URLS.get.replace('__ID__', id);
+                //     $.getJSON(url)
+                //       .done(function(data){
+                //         const payload = data?.data || data;
+                //         const libro = payload?.libro || payload;
+                //         const body = document.getElementById('modalDetailBody');
+                //         if(!libro){ body.innerHTML = '<p>No se pudo cargar el detalle.</p>'; }
+                //         else{
+                //             body.innerHTML = `
+                //                 <h5>${libro.titulo || libro['titulo'] || ''}</h5>
+                //                 <p class="mb-1"><strong>Autor:</strong> ${libro.autor || libro['autor'] || ''}</p>
+                //                 <p class="mb-1"><strong>Género:</strong> ${libro.genero || libro['genero'] || ''}</p>
+                //                 <p class="mb-1"><strong>Año:</strong> ${libro.año_publicacion || libro['año_publicacion'] || libro.anio_publicacion || ''}</p>
+                //                 <p class="mb-1"><strong>Editorial:</strong> ${libro.editorial || libro['editorial'] || ''}</p>
+                //                 <p class="mt-2">${libro.descripcion || libro['descripcion'] || ''}</p>
+                //             `;
+                //         }
+                //         const modal = new bootstrap.Modal(document.getElementById('modalDetail'));
+                //         modal.show();
+                //       })
+                //       .fail(function(jqXHR, textStatus, err){ alert('Error cargando detalles: ' + (err||textStatus)); });
+                // }
 
                 function openConfirmDelete(id, title){
                     document.getElementById('confirmModalTitle').innerText = `Eliminar libro`;

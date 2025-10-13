@@ -11,6 +11,7 @@ from src.infrastuctura.http.genero.genero_ruta import generoRuta, init_genero_ro
 from src.infrastuctura.http.historial.historial_ruta import historialRuta, init_historial_routes
 from src.infrastuctura.http.comentario.comentario_ruta import comentarioRuta, init_comentario_routes
 from src.infrastuctura.http.calificacion.calificacion_ruta import calificacionRuta, init_calificacion_routes
+from src.infrastuctura.dependencias.recomendacion_dep import iniciar_recomendacion
 from src.custom.error_custom import APIError
 from src.util.responseApi import ResponseApi
 import dotenv
@@ -26,6 +27,9 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(16))
 app.config['SESSION_COOKIE_SECURE'] = False  # True en producción con HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# iniciar recomendacion al iniciar app
+# iniciar_recomendacion()
+
 
 # Inicializar dependencias de libros
 init_libro_routes()
