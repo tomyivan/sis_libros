@@ -164,16 +164,7 @@
                 $('#generosList').append(html);
             }
 
-            // debounce helper
-            function debounce(fn, wait){
-                let t;
-                return function(){
-                    const args = arguments;
-                    const ctx = this;
-                    clearTimeout(t);
-                    t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
-                };
-            }
+   
 
             function obtenerGeneros(filtro= {}, offset = 0, limit = 10){
                 const apiUrl = '{{ url_for("genero.obtener_generos") }}';
@@ -212,9 +203,8 @@
                 const val = e.target.value.trim();
                 if(val.length >= 3 || val.length === 0){
                     $('#generosList').empty();
-                    debounce(function(){
-                        obtenerGeneros(val.length >= 3 ? { q: val } : {}, 0, limit);
-                    }, 300)();
+                    obtenerGeneros(val.length >= 3 ? { q: val } : {}, 0, limit);
+        
                 }
             });
        

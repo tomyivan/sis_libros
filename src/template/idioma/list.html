@@ -149,15 +149,6 @@
       .fail(function(){ alert('Error al cargar más idiomas'); });
   });
 
-  function debounce(fn, wait){
-    let t = null;
-    return function(){
-      const args = arguments;
-      const ctx = this;
-      clearTimeout(t);
-      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
-    };
-  }
 
   function obtenerIdiomas(filtro= {}, offset = 0, limit = 10){
     const apiUrl = '{{ url_for("idioma.obtener_idiomas") }}';
@@ -184,9 +175,7 @@
     const val = $(this).val().trim();
     if(val.length >= 3 || val.length === 0){
       $('#idiomasList').empty();
-      debounce(function(){
-        obtenerIdiomas(val.length >= 3 ? { q: val } : {}, 0, 10);
-      }, 300)();
+      obtenerIdiomas(val.length >= 3 ? { q: val } : {}, 0, 10);
     }
   });
   $(document).on('click', '#idiomasLoadMore', function() {

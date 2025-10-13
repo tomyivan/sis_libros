@@ -110,15 +110,7 @@
 {% block extra_js %}
 <script>
 $(document).ready(function(){
-	// Debounce helper
-	function debounce(fn, wait){
-		let t;
-		return function(){
-			const ctx = this, args = arguments;
-			clearTimeout(t);
-			t = setTimeout(()=> fn.apply(ctx, args), wait);
-		}
-	}
+
 
 	// Render suggestions into the dropdown
 	function renderHistorial(items){
@@ -168,18 +160,17 @@ $(document).ready(function(){
 		});
 	}
 
-	// Wire input events with debounce
-	const debouncedFetch = debounce(function(){
-		const q = $('#libroText').val().trim();
+
+
+	$('#libroText').on('input', function(){
+		const q = $(this).val().trim();
 		if(q.length >= 1) { // show suggestions starting at 1 char for nicer UX
 			fetchHistorial(q);
 		} else {
 			// show recent (empty query)
 			fetchHistorial('');
 		}
-	}, 300);
-
-	$('#libroText').on('input', debouncedFetch);
+	});
 
 	$('#buscarLibro').on('submit', function(e){
 		e.preventDefault();
@@ -196,8 +187,6 @@ $(document).ready(function(){
 			},
 			error: function(){ }
 		});
-		// TODO: run actual book search / navigate results
-		console.log('Buscar libro (submit):', buscar);
 		$('#historialDropdown').hide();
 	});
 });

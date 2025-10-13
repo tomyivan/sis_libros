@@ -39,7 +39,8 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-4. **Configurar variables de entorno**
+4. **Configuracion de variables y carpeta**
+Crea  la carpeta ./static/uploads
 ```bash
 # Copiar el archivo de ejemplo
 copy .env.example .env

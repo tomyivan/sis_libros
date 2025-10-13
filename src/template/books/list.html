@@ -172,16 +172,6 @@
             $('#booksList').append(libroHtml);
   }
 
-  // debounce helper
-  function debounce(fn, wait) {
-    let t;
-    return function() {
-      const args = arguments;
-      const ctx = this;
-      clearTimeout(t);
-      t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
-    };
-  }
 
   const doSearch = function() {
     const buscar = $('#booksSearch').val();
@@ -191,10 +181,10 @@
     }
   };
 
-  const debouncedSearch = debounce(doSearch, 300);
 
-  // wire debounced input and immediate Enter
-  $(document).on('input', '#booksSearch', debouncedSearch);
+  $(document).on('input', '#booksSearch', function(){
+    doSearch();
+  });
   $(document).on('keydown', '#booksSearch', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doSearch(); } });
 
 
