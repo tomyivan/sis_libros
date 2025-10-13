@@ -12,12 +12,12 @@ class EliminarLibroServicio:
         libro_existente = self.repositorio.obtenerLibro(
             libro_mod.FiltroLibroModelo(_id=libro_id)
         )
+        print(libro_existente)
         if not libro_existente:
             raise ValueError("El libro no existe")
         
         # Verificar que el libro esté disponible
-        if not libro_existente.disponible:
+        if not libro_existente['disponible']:
             raise ValueError("El libro ya está desactivado")
-        
         # Realizar soft delete
         return self.repositorio.eliminarLibro(libro_id)

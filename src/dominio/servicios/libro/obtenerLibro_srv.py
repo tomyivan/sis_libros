@@ -20,7 +20,7 @@ class ObtenerLibroServicio:
         Pasa offset/limit al repositorio cuando estén presentes.
         """
         if filtro is None:
-            filtro = libro_mod.FiltroLibroModelo( titulo=filtro)
+            filtro = libro_mod.FiltroLibroModelo( titulo=filtro, disponible=True )
         libros = self.repositorio.obtenerLibros(filtro, offset=offset, limit=limit)
         nuevoLibro = []
         for libro in libros:

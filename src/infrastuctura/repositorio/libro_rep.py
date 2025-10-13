@@ -66,6 +66,7 @@ class LibroRepositorio(libro_prt.LibroPuerto):
     def eliminarLibro(self, libro_id: str) -> bool:
         try:
             # Soft delete - marcar como no disponible
+            print(libro_id)
             result = self.collection.update_one(
                 {"_id": ObjectId(libro_id)}, 
                 {"$set": {"disponible": False, "fecha_modificacion": datetime.now()}}

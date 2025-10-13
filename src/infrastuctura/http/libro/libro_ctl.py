@@ -1,10 +1,12 @@
-from flask import request, jsonify, render_template, redirect, url_for, flash
+from flask import request, jsonify, render_template, redirect, url_for, flash, current_app
 from src.app.libro_app import LibroApp
 from src.infrastuctura.dependencias import categoria_dep, tag_dep, genero_dep, idioma_dep, pais_dep
 from src.util.responseApi import ResponseApi
 from src.custom.error_custom import APIError
 from marshmallow import Schema, fields, ValidationError
 from typing import List
+import os
+from werkzeug.utils import secure_filename
 
 class LibroCreateSchema(Schema):
     titulo = fields.String(required=True, validate=lambda x: len(x.strip()) > 0, 
@@ -29,7 +31,7 @@ class LibroCreateSchema(Schema):
     origen_pais = fields.String(required=True, validate=lambda x: len(x.strip()) > 0,
                                error_messages={'required': 'El país de origen es requerido', 'invalid': 'El país de origen no puede estar vacío'})
     disponible = fields.Boolean(missing=True)
-    portada_url = fields.Url(allow_none=True, error_messages={'invalid': 'La URL de la portada debe ser válida'})
+    portada_url = fields.String(required=True, error_messages={'invalid': 'La URL de la portada debe ser válida'})
     tags = fields.List(fields.String(), missing=[])
 
 class LibroUpdateSchema(LibroCreateSchema):
@@ -104,44 +106,124 @@ class LibroControlador:
     def crearLibro(self):
         """Crear un nuevo libro"""
         try:
-            data = request.get_json()
-            
+            # Support JSON APIs and multipart/form-data (file upload from web form)
+            if request.content_type and 'multipart/form-data' in request.content_type:
+                # build data from form fields
+                form = request.form
+                print(form)
+                data = {
+                    'titulo': form.get('titulo'),
+                    'autor': form.get('autor'),
+                    'genero': form.get('genero').split(','),
+                    'año_publicacion': int(form.get('año_publicacion')) if form.get('año_publicacion') else None,
+                    'editorial': form.get('editorial'),
+                    'paginas': int(form.get('paginas')) if form.get('paginas') else None,
+                    'idioma': form.get('idioma'),
+                    'categoria': form.get('categoria') or '',
+                    'descripcion': form.get('descripcion'),
+                    'origen_pais': form.get('origen_pais'),
+                    'isbn': form.get('isbn'),
+                    'disponible': True,
+                    'tags': form.get('tags').split(',') 
+                }
+                print(data)
+                # handle file upload
+                portada = request.files.get('portada')
+                if portada and portada.filename:
+                    uploads_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                    try:
+                        os.makedirs(uploads_dir, exist_ok=True)
+                    except Exception:
+                        pass
+                    filename = secure_filename(portada.filename)
+                    # avoid collisions
+                    import time, uuid
+                    suffix = str(int(time.time())) + '_' + uuid.uuid4().hex[:6]
+                    name, ext = os.path.splitext(filename)
+                    filename_safe = f"{name}_{suffix}{ext}"
+                    dest = os.path.join(uploads_dir, filename_safe)
+                    portada.save(dest)
+                    # set accessible URL
+                    data['portada_url'] = url_for('static', filename=f'uploads/{filename_safe}', _external=False)
+
+            else:
+                data = request.get_json()
+
             # Validar datos con Marshmallow
             schema = LibroCreateSchema()
             validated_data = schema.load(data)
-            
+
             # Crear libro
             libro_id = self.app.crearLibro(validated_data)
-            
+
             return jsonify(ResponseApi.exito({
                 'message': 'Libro creado exitosamente',
                 'libro_id': libro_id
             }, 201))
             
         except ValidationError as e:
+            print(e.messages)
             return jsonify(ResponseApi.error(f"Error de validación: {e.messages}", 400))
         except ValueError as e:
+            print(e)
             return jsonify(ResponseApi.error(f"Error de datos: {str(e)}", 400))
         except Exception as e:
+            print(e)
             return jsonify(ResponseApi.error(f"Error en el servidor: {str(e)}", 500))
 
     def actualizarLibro(self, libro_id: str):
         """Actualizar un libro existente"""
         try:
-            data = request.get_json()
-            
+            # Support JSON APIs and multipart/form-data (editing from web form)
+            if request.content_type and 'multipart/form-data' in request.content_type:
+                form = request.form
+                # Build dict from form (similar to crearLibro)
+                data = {
+                    'titulo': form.get('titulo'),
+                    'autor': form.get('autor'),
+                    'genero': form.get('genero').split(',') if form.get('genero') else [],
+                    'año_publicacion': int(form.get('año_publicacion')) if form.get('año_publicacion') else None,
+                    'editorial': form.get('editorial'),
+                    'paginas': int(form.get('paginas')) if form.get('paginas') else None,
+                    'idioma': form.get('idioma'),
+                    'categoria': form.get('categoria') or '',
+                    'descripcion': form.get('descripcion'),
+                    'origen_pais': form.get('origen_pais'),
+                    'isbn': form.get('isbn'),
+                    'disponible': True,
+                    'tags': form.get('tags').split(',') if form.get('tags') else []
+                }
+
+                # handle file upload (portada)
+                portada = request.files.get('portada')
+                if portada and portada.filename:
+                    uploads_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                    try:
+                        os.makedirs(uploads_dir, exist_ok=True)
+                    except Exception:
+                        pass
+                    filename = secure_filename(portada.filename)
+                    import time, uuid
+                    suffix = str(int(time.time())) + '_' + uuid.uuid4().hex[:6]
+                    name, ext = os.path.splitext(filename)
+                    filename_safe = f"{name}_{suffix}{ext}"
+                    dest = os.path.join(uploads_dir, filename_safe)
+                    portada.save(dest)
+                    data['portada_url'] = url_for('static', filename=f'uploads/{filename_safe}', _external=False)
+            else:
+                data = request.get_json()
+
             # Validar datos con Marshmallow
             schema = LibroUpdateSchema()
             validated_data = schema.load(data)
-            
+
             # Actualizar libro
             modified_count = self.app.actualizarLibro(libro_id, validated_data)
             
             if modified_count > 0:
-                return jsonify(ResponseApi.exito({
-                    'message': 'Libro actualizado exitosamente',
+                return jsonify(ResponseApi.exito('Libro actualizado exitosamente',{
                     'modified_count': modified_count
-                }, 200))
+                }))
             else:
                 return jsonify(ResponseApi.error("No se pudo actualizar el libro", 400))
                 
@@ -155,6 +237,7 @@ class LibroControlador:
     def eliminarLibro(self, libro_id: str):
         """Eliminar (desactivar) un libro"""
         try:
+            print(libro_id)
             success = self.app.eliminarLibro(libro_id)
             
             if success:
@@ -177,6 +260,7 @@ class LibroControlador:
         try:
             # Obtener primeros 10 libros para la vista inicial (lazy load)
             primeros = self.app.obtenerLibros(None, offset=0, limit=6)
+
             libros_list = [libro.__dict__ for libro in primeros]
             return render_template('books/list.html', libros=libros_list, initial_limit=6)
         except Exception as e:

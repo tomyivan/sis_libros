@@ -74,34 +74,7 @@ def obtener_libro_web(libro_id):
     return libro_controlador.obtenerLibro(libro_id)
 
 
-@libroRuta.route('/web/buscar', methods=['GET', 'POST'])
-@login_required
-def buscar_libros_web():
-    return libro_controlador.buscarLibros()
 
-
-@libroRuta.route('/web/genero/<genero>', methods=['GET'])
-@login_required
-def obtener_por_genero_web(genero):
-    return libro_controlador.obtenerLibrosPorGenero(genero)
-
-
-@libroRuta.route('/web/autor/<autor>', methods=['GET'])
-@login_required
-def obtener_por_autor_web(autor):
-    return libro_controlador.obtenerLibrosPorAutor(autor)
-
-
-@libroRuta.route('/web/mejor-calificados', methods=['GET'])
-@login_required
-def obtener_mejor_calificados_web():
-    return libro_controlador.obtenerMejorCalificados()
-
-
-@libroRuta.route('/web/estadisticas', methods=['GET'])
-@login_required
-def obtener_estadisticas_web():
-    return libro_controlador.obtenerEstadisticas()
 
 
 @libroRuta.route('/web/crear', methods=['POST'])
@@ -116,20 +89,3 @@ def crear_libro_web_post():
 def actualizar_libro_web(libro_id):
     return libro_controlador.actualizarLibro(libro_id)
 
-
-@libroRuta.route('/web/eliminar/<libro_id>', methods=['POST', 'DELETE'])
-@login_required
-def eliminar_libro_web(libro_id):
-    return libro_controlador.eliminarLibro(libro_id)
-
-
-@libroRuta.route('/web/reactivar/<libro_id>', methods=['POST', 'PUT'])
-@login_required
-def reactivar_libro_web(libro_id):
-    return libro_controlador.reactivarLibro(libro_id)
-
-
-@libroRuta.route('/web/calificar/<libro_id>', methods=['POST'])
-@login_required
-def calificar_libro_web(libro_id):
-    return libro_controlador.calificarLibro(libro_id)

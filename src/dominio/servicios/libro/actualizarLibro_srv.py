@@ -30,10 +30,10 @@ class ActualizarLibroServicio:
             descripcion=libro_data["descripcion"],
             origen_pais=libro_data["origen_pais"],
             disponible=libro_data.get("disponible", True),
-            fecha_creacion=libro_existente.fecha_creacion,  # Mantener fecha original
+            fecha_creacion=libro_existente.get('fecha_creacion') if isinstance(libro_existente, dict) else getattr(libro_existente, 'fecha_creacion', None),  # Mantener fecha original
             fecha_modificacion=datetime.now(),
-            portada_url=libro_data.get("portada_url", libro_existente.portada_url),
-            tags=libro_data.get("tags", libro_existente.tags or [])
+            portada_url=libro_data.get("portada_url", libro_existente.get('portada_url') if isinstance(libro_existente, dict) else getattr(libro_existente, 'portada_url', None)),
+            tags=libro_data.get("tags", libro_existente.get('tags', []) if isinstance(libro_existente, dict) else getattr(libro_existente, 'tags', []) )
         )
         
         return self.repositorio.actualizarLibro(libro_actualizado, libro_id)

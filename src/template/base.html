@@ -219,9 +219,8 @@
             <!-- Global URL templates for JS (replace __ID__ with real id) -->
             <script>
                 const RECOM_URLS = {
-                    delete: "{{ url_for('libro.eliminar_libro_web', libro_id='__ID__') }}",
+                    delete: "{{ url_for('libro.eliminar_libro', libro_id='__ID__') }}",
                     get: "{{ url_for('libro.obtener_libro_web', libro_id='__ID__') }}",
-                    rate: "{{ url_for('libro.calificar_libro_web', libro_id='__ID__') }}"
                 };
 
                 // Modal helpers
@@ -255,27 +254,33 @@
                     const btn = document.getElementById('confirmModalBtn');
                     btn.onclick = function(){
                         btn.disabled = true;
-                        $.post(RECOM_URLS.delete.replace('__ID__', id))
-                          .done(function(){ location.reload(); })
-                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al eliminar'); })
-                          .always(function(){ btn.disabled = false; });
+                        $.ajax({
+                            url: RECOM_URLS.delete.replace('__ID__', id),
+                            method: 'DELETE',
+                            success: function(response){ 
+                                location.reload();
+                             },
+                            error: function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al eliminar'); },
+                            complete: function(){ btn.disabled = false; }
+                        })
+                        
                     };
                     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
                     modal.show();
                 }
 
-                function openRateModal(id, title){
-                    document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
-                    document.getElementById('rateSubmit').onclick = function(){
-                        const val = parseFloat(document.getElementById('rateValue').value);
-                        if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                        $.ajax({ url: RECOM_URLS.rate.replace('__ID__', id), method: 'POST', contentType: 'application/json', data: JSON.stringify({calificacion: val}) })
-                          .done(function(){ location.reload(); })
-                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al calificar'); });
-                    };
-                    const modal = new bootstrap.Modal(document.getElementById('rateModal'));
-                    modal.show();
-                }
+                // function openRateModal(id, title){
+                //     document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
+                //     document.getElementById('rateSubmit').onclick = function(){
+                //         const val = parseFloat(document.getElementById('rateValue').value);
+                //         if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
+                //         $.ajax({ url: RECOM_URLS.rate.replace('__ID__', id), method: 'POST', contentType: 'application/json', data: JSON.stringify({calificacion: val}) })
+                //           .done(function(){ location.reload(); })
+                //           .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al calificar'); });
+                //     };
+                //     const modal = new bootstrap.Modal(document.getElementById('rateModal'));
+                //     modal.show();
+                // }
             </script>
 
             <!-- Detail Modal -->
