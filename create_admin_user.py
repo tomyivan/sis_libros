@@ -33,7 +33,8 @@ def create_admin_user():
             password_hash=hashed_password,
             fecha_creacion=datetime.now(),
             activo=True,
-            fecha_modificacion=datetime.now()
+            fecha_modificacion=datetime.now(),
+            rol="admin"  # Rol de administrador
         )
         
         # Verificar si ya existe

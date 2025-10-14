@@ -1,11 +1,12 @@
 from flask import request, jsonify, render_template, redirect, url_for, session, flash
-from src.dominio.servicios.usuario.autenticar_srv import AutenticarServicio
-from src.dominio.servicios.usuario.obtenerUsuario_srv import ObtenerUsuarioServicio
-from src.infrastuctura.repositorio.usuario_rep import UsuarioRepositorio
-from src.helpers.mongoconn_hlp import MongoConnection
+# from src.dominio.servicios.usuario.autenticar_srv import AutenticarServicio
+# from src.dominio.servicios.usuario.obtenerUsuario_srv import ObtenerUsuarioServicio
+# from src.infrastuctura.repositorio.usuario_rep import UsuarioRepositorio
+# from src.helpers.mongoconn_hlp import MongoConnection
 from src.util.responseApi import ResponseApi
-from src.custom.error_custom import APIError
+# from src.custom.error_custom import APIError
 from marshmallow import Schema, fields, ValidationError
+from src.app.auth_app import AuthApp
 import functools
 
 class LoginSchema(Schema):
@@ -15,19 +16,22 @@ class LoginSchema(Schema):
                            error_messages={'required': 'La contraseña es requerida', 'invalid': 'La contraseña no puede estar vacía'})
 
 class AuthControlador:
-    def __init__(self):
+    def __init__(self, auth_service: AuthApp):
         # Inicializar servicios
-        mongo_conn = MongoConnection()
-        usuario_repo = UsuarioRepositorio(mongo_conn)
-        obtener_usuario_srv = ObtenerUsuarioServicio(usuario_repo)
-        self.auth_service = AutenticarServicio(obtener_usuario_srv)
-    
+        # mongo_conn = MongoConnection()
+        # usuario_repo = UsuarioRepositorio(mongo_conn)
+        # obtener_usuario_srv = ObtenerUsuarioServicio(usuario_repo)
+        # self.auth_service = AutenticarServicio(obtener_usuario_srv)
+        self.auth_service = auth_service
+
     def mostrar_login(self):
         """Muestra la pantalla de login"""
         if 'user_id' in session:
             return redirect(url_for('dashboard'))
         return render_template('auth/login.html')
-    
+    def nuevo_usuario(self):
+
+        return render_template('auth/create.html')
     def login(self):
         """Procesa el login del usuario"""
         try:
@@ -41,7 +45,7 @@ class AuthControlador:
             validated_data = schema.load(data)
             
             # Autenticar usuario
-            auth_result = self.auth_service.autenticar(
+            auth_result = self.auth_service.autenticarUsuario(
                 validated_data['alias'], 
                 validated_data['password']
             )
@@ -77,6 +81,7 @@ class AuthControlador:
                     return render_template('auth/login.html')
                     
         except ValidationError as e:
+            print(f"Error de validación: {e.messages}")
             error_msg = f"Error de validación: {e.messages}"
             if request.is_json:
                 return jsonify(ResponseApi.error(error_msg, 400))
@@ -84,6 +89,7 @@ class AuthControlador:
                 flash(error_msg, 'error')
                 return render_template('auth/login.html')
         except Exception as e:
+            print(f"Error en el servidor: {str(e)}")
             error_msg = f"Error en el servidor: {str(e)}"
             if request.is_json:
                 return jsonify(ResponseApi.error(error_msg, 500))
@@ -108,8 +114,11 @@ class AuthControlador:
             'alias': session.get('user_alias'),
             'rol': session.get('rol')
         }
+        print(session.get('rol')    )
         return render_template('dashboard/dashboard.html', user=user_data)
     
+
+
     def verificar_token_api(self):
         """Endpoint para verificar token (para APIs)"""
         try:

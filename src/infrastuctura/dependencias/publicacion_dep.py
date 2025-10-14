@@ -1,0 +1,9 @@
+from src.app.publicacion_app import PublicacionApp
+from src.dominio.servicios.publicaciones import crearPublicacion_srv, obtenerPublicacion_srv
+from src.infrastuctura.repositorio import publicacion_rep
+from src.infrastuctura.http.publicacion import publicacion_ctl
+publicacionRep = publicacion_rep.PublicacionRepositorio()
+crearPublicacionServicio = crearPublicacion_srv.CrearPublicacionServicio(publicacionRep)
+obtenerPublicacionServicio = obtenerPublicacion_srv.ObtenerPublicacionServicio(publicacionRep)
+pubApp = PublicacionApp(crearPublicacionServicio, obtenerPublicacionServicio)
+pubCtl = publicacion_ctl.PublicacionControlador(pubApp)

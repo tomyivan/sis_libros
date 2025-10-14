@@ -13,7 +13,7 @@ class UsuarioRepositorio(usuario_prt.UsuarioPuerto):
         try:
             query = {k: (ObjectId(v) if k == "_id" else v) for k, v in filtro.__dict__.items() if v is not None}
             respuesta = self.collection.find_one(query,
-                                                 projection={"_id": 1, "nombre": 1, "apellido": 1, "alias": 1, "email": 1, "pais": 1, "edad": 1, "fecha_creacion": 1, "fecha_modificacion": 1, "password_hash": 1}
+                                                 projection={"_id": 1, "nombre": 1, "apellido": 1, "alias": 1, "email": 1, "pais": 1, "edad": 1, "fecha_creacion": 1, "fecha_modificacion": 1, "password_hash": 1, "rol": 1}
                                                  )
             if respuesta:
                 return usuario_mod.UsuarioModeloDTO(**{**respuesta, "_id": str(respuesta["_id"])})

@@ -1,16 +1,20 @@
 from flask import Blueprint, request
-from src.infrastuctura.http.autenticacion.auth_ctl import AuthControlador
-
+# from src.infrastuctura.http.autenticacion.auth_ctl import AuthControlador
+from src.infrastuctura.dependencias.auth_dep import auth_controller
 # Crear blueprint para autenticación
 authRuta = Blueprint('auth', __name__, url_prefix='/auth')
 
 # Inicializar controlador
-auth_controller = AuthControlador()
+# auth_controller = AuthControlador()
 
 # Rutas de autenticación
 @authRuta.route('/login', methods=['GET', 'POST'])
 def login():
     return auth_controller.login()
+
+@authRuta.route('/nuevo-usuario', methods=['GET'])
+def nuevo_usuario():
+    return auth_controller.nuevo_usuario()
 
 @authRuta.route('/logout', methods=['POST', 'GET'])
 def logout():

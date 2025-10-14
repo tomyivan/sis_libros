@@ -1,175 +1,313 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{% block title %}Recomendador de Libros{% endblock %}</title>
 
-        <!-- Bootstrap 5 -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Recomendador de Libros{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Select2 CSS (global) -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-        <style>
-            :root{
-                --brand-1: #6f42c1; /* deep violet */
-                --brand-2: #42a5f5; /* sky blue */
-                --muted: #6c757d;
-                --sidebar-width: 250px; /* fixed sidebar width */
-            }
-            body { background:#f8fafc; }
+    <style>
+        :root {
+            --brand-1: #6f42c1;
+            /* deep violet */
+            --brand-2: #42a5f5;
+            /* sky blue */
+            --muted: #6c757d;
+            --sidebar-width: 250px;
+            /* fixed sidebar width */
+        }
+
+        body {
+            background: #f8fafc;
+        }
+
+        .app-sidebar {
+            width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
+            flex: 0 0 var(--sidebar-width);
+            min-height: 100vh;
+            background: linear-gradient(180deg, rgba(111, 66, 193, 0.98) 0%, rgba(66, 165, 245, 0.95) 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(12, 34, 55, 0.06);
+        }
+
+        .app-sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .app-sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: .375rem;
+        }
+
+        .app-topbar {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .brand-mark {
+            font-weight: 700;
+            color: var(--brand-1);
+        }
+
+        .content {
+            padding: 1.25rem;
+        }
+
+        .card-ghost {
+            box-shadow: 0 6px 18px rgba(12, 34, 55, 0.06);
+            border: none;
+        }
+
+        .footer-small {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        /* Responsive behaviour: desktop = fixed sidebar with content offset; mobile = off-canvas */
+        @media (min-width: 992px) {
             .app-sidebar {
-                width: var(--sidebar-width);
-                max-width: var(--sidebar-width);
-                flex: 0 0 var(--sidebar-width);
-                min-height: 100vh;
-                background: linear-gradient(180deg, rgba(111,66,193,0.98) 0%, rgba(66,165,245,0.95) 100%);
-                color: #fff;
-                box-shadow: 0 6px 20px rgba(12,34,55,0.06);
-            }
-            .app-sidebar .nav-link { color: rgba(255,255,255,0.9); }
-            .app-sidebar .nav-link.active { background: rgba(255,255,255,0.08); border-radius: .375rem; }
-            .app-topbar { background: #fff; border-bottom: 1px solid #e9ecef; }
-            .brand-mark { font-weight:700; color: var(--brand-1); }
-            .content { padding: 1.25rem; }
-            .card-ghost { box-shadow: 0 6px 18px rgba(12, 34, 55, 0.06); border: none; }
-            .footer-small { font-size: .85rem; color: var(--muted); }
-            /* Responsive behaviour: desktop = fixed sidebar with content offset; mobile = off-canvas */
-            @media (min-width: 992px){
-                .app-sidebar { position: fixed; left: 0; top: 0; bottom: 0; }
-                .flex-fill { margin-left: var(--sidebar-width); }
-                .content { padding: 1.25rem; }
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
             }
 
-            @media (max-width: 991px){
-                .app-sidebar { position: fixed; left: -110%; top: 0; bottom: 0; z-index: 1060; transition: left .25s ease; }
-                .app-sidebar.show { left: 0; }
-                .sidebar-backdrop { display: none; }
-                .app-sidebar.show ~ .sidebar-backdrop { display: block; }
-                .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1050; }
-                .content { padding-top: 4.5rem; }
+            .flex-fill {
+                margin-left: var(--sidebar-width);
             }
-            /* Global form control sizing to provide a consistent look across templates */
-            .form-control, .form-select, textarea {
-                padding: .65rem .9rem;
-                font-size: 1rem;
-                line-height: 1.25;
-                border-radius: .5rem;
-                height: 46px;
-                box-sizing: border-box;
-            }
-            .input-group .form-control { height: 46px; padding-left: .75rem; }
-            .form-label.small { font-size: .85rem; }
-            /* Select2 compatibility */
-            /* Select2 compatibility + nicer design */
-            .select2-container { width: 100% !important; }
-            .select2-container--default .select2-selection--single {
-                height: 46px; padding: .25rem .6rem; border-radius: .5rem; border: 1px solid #dfe7ef; background: #fff;
-                box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-            }
-            .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 46px; color: #223; }
-            .select2-container--default .select2-selection--single .select2-selection__arrow { height: 46px; right: .35rem; }
-            .select2-container--default .select2-selection--multiple {
-                min-height: 46px; padding: .35rem .5rem; border-radius: .5rem; border: 1px solid #dfe7ef; background: #fff;
-                box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-            }
-            /* Chips (selected items) */
-            .select2-container--default .select2-selection__choice {
-                background: #5b8def; color: #fff; border: none; padding: .25rem .5rem; margin: .15rem .25rem; border-radius: .375rem; font-size: .85rem;
-            }
-            .select2-container--default .select2-selection__choice__remove { color: rgba(255,255,255,0.9); margin-right: .35rem; }
-            /* Placeholder style */
-            .select2-container--default .select2-selection__placeholder { color: #6c757d; }
-            /* Dropdown panel */
-            .select2-container--open .select2-dropdown { box-shadow: 0 8px 30px rgba(30,50,80,0.08); border: 1px solid rgba(31,41,55,0.06); }
-            .select2-results__option--highlighted[aria-selected] { background: rgba(91,141,239,0.08); }
-         
-            /* Ensure small input-group icons align */
-            .input-group-text .bi { line-height: 1; font-size: 1.15rem; }
-        </style>
-        {% block extra_css %}{% endblock %}
-    </head>
-    <body>
-        <div class="d-flex">
-            <!-- Sidebar -->
-            <aside class="app-sidebar p-3" >
-                <div class="mb-4">
-                    <a class="d-flex align-items-center text-decoration-none text-white" href="{{ url_for('dashboard') }}">
-                        <i class="bi bi-journal-bookmark-fill fs-3 me-2"></i>
-                        <span class="h5 mb-0">Libros</span>
-                    </a>
-                </div>
-                <nav class="nav flex-column">
-                    <a class="nav-link mb-1 {% if request.path.startswith('/dashboard') %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/libro') %}active{% endif %}" href="{{ url_for('libro.lista_libros_web') }}"><i class="bi bi-book me-2"></i> Libros</a>
-                    <!-- <a class="nav-link mb-1" href="{{ url_for('libro.crear_libro_web') }}"><i class="bi bi-plus-circle me-2"></i> Agregar libro</a> -->
-                    <!-- <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-bookmarks me-2"></i> Categorías</a> -->
-                    <a class="nav-link mb-1 {% if request.path.startswith('/genero') %}active{% endif %}" href="{{ url_for('genero.lista_generos_web') }}"><i class="bi bi-collection me-2"></i> Géneros</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/tag') %}active{% endif %}" href="{{ url_for('tag.lista_tags_web') }}"><i class="bi bi-tag me-2"></i> Tags</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/idioma') %}active{% endif %}" href="{{ url_for('idioma.lista_idiomas_web') }}"><i class="bi bi-translate me-2"></i> Idiomas</a>
-                    <a class="nav-link mb-1 {% if request.path.startswith('/pais') %}active{% endif %}" href="{{ url_for('pais.lista_paises_web') }}"><i class="bi bi-globe me-2"></i> Países</a>
-                    <a class="nav-link mb-1" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
-                </nav>
-        
-            </aside>
 
-            <div class="flex-fill">
-                <!-- Topbar -->
-                <header class="app-topbar d-flex align-items-center justify-content-between px-3 py-2">
-                    <div class="d-flex align-items-center">
-                        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-lg-none me-2"><i class="bi bi-list"></i></button>
-                        <a class="text-decoration-none brand-mark me-3" href="{{ url_for('dashboard') }}">Libros</a>
-                        <div class="text-muted small">Recomendaciones personalizadas</div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        {% if session.get('user_id') %}
-                            <div class="me-3 text-end">
-                                <div class="fw-semibold">{{ session.get('user_name') or session.get('user_alias') }}</div>
-                                <div class="text-muted small">{{ session.get('rol') or 'Usuario' }}</div>
-                            </div>
-                        {% endif %}
-                    </div>
-                </header>
+            .content {
+                padding: 1.25rem;
+            }
+        }
 
-                <!-- Main content -->
-                <main class="content container-fluid">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category,msg in messages %}
-                                <div class="alert alert-{{ 'danger' if category in ['error','danger'] else category }} alert-dismissible fade show" role="alert">
-                                    {{ msg }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+        @media (max-width: 991px) {
+            .app-sidebar {
+                position: fixed;
+                left: -110%;
+                top: 0;
+                bottom: 0;
+                z-index: 1060;
+                transition: left .25s ease;
+            }
 
-                    {% block content %}{% endblock %}
-                </main>
+            .app-sidebar.show {
+                left: 0;
+            }
+
+            .sidebar-backdrop {
+                display: none;
+            }
+
+            .app-sidebar.show~.sidebar-backdrop {
+                display: block;
+            }
+
+            .sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.45);
+                z-index: 1050;
+            }
+
+            .content {
+                padding-top: 4.5rem;
+            }
+        }
+
+        /* Global form control sizing to provide a consistent look across templates */
+        .form-control,
+        .form-select,
+        textarea {
+            padding: .65rem .9rem;
+            font-size: 1rem;
+            line-height: 1.25;
+            border-radius: .5rem;
+            height: 46px;
+            box-sizing: border-box;
+        }
+
+        .input-group .form-control {
+            height: 46px;
+            padding-left: .75rem;
+        }
+
+        .form-label.small {
+            font-size: .85rem;
+        }
+
+        /* Select2 compatibility */
+        /* Select2 compatibility + nicer design */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 46px;
+            padding: .25rem .6rem;
+            border-radius: .5rem;
+            border: 1px solid #dfe7ef;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 46px;
+            color: #223;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 46px;
+            right: .35rem;
+        }
+
+        .select2-container--default .select2-selection--multiple {
+            min-height: 46px;
+            padding: .35rem .5rem;
+            border-radius: .5rem;
+            border: 1px solid #dfe7ef;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+        }
+
+        /* Chips (selected items) */
+        .select2-container--default .select2-selection__choice {
+            background: #5b8def;
+            color: #fff;
+            border: none;
+            padding: .25rem .5rem;
+            margin: .15rem .25rem;
+            border-radius: .375rem;
+            font-size: .85rem;
+        }
+
+        .select2-container--default .select2-selection__choice__remove {
+            color: rgba(255, 255, 255, 0.9);
+            margin-right: .35rem;
+        }
+
+        /* Placeholder style */
+        .select2-container--default .select2-selection__placeholder {
+            color: #6c757d;
+        }
+
+        /* Dropdown panel */
+        .select2-container--open .select2-dropdown {
+            box-shadow: 0 8px 30px rgba(30, 50, 80, 0.08);
+            border: 1px solid rgba(31, 41, 55, 0.06);
+        }
+
+        .select2-results__option--highlighted[aria-selected] {
+            background: rgba(91, 141, 239, 0.08);
+        }
+
+        /* Ensure small input-group icons align */
+        .input-group-text .bi {
+            line-height: 1;
+            font-size: 1.15rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="app-sidebar p-3">
+            <div class="mb-4">
+                <a class="d-flex align-items-center text-decoration-none text-white" href="{{ url_for('dashboard') }}">
+                    <i class="bi bi-journal-bookmark-fill fs-3 me-2"></i>
+                    <span class="h5 mb-0">Libros</span>
+                </a>
             </div>
-        </div>
+            <nav class="nav flex-column">
+                <a class="nav-link mb-1 {% if request.path.startswith('/dashboard') %}active{% endif %}"
+                    href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                <a class="nav-link mb-1 {% if request.path.startswith('/libro') %}active{% endif %}"
+                    href="{{ url_for('libro.lista_libros_web') }}"><i class="bi bi-book me-2"></i> Libros</a>
+                <!-- <a class="nav-link mb-1" href="{{ url_for('libro.crear_libro_web') }}"><i class="bi bi-plus-circle me-2"></i> Agregar libro</a> -->
+                <!-- <a class="nav-link mb-1 {% if request.path.startswith('/categoria') %}active{% endif %}" href="{{ url_for('categoria.lista_categorias_web') }}"><i class="bi bi-bookmarks me-2"></i> Categorías</a> -->
+                {% if session.get('rol') == 'admin' %}
+                <a class="nav-link mb-1 {% if request.path.startswith('/genero') %}active{% endif %}"
+                    href="{{ url_for('genero.lista_generos_web') }}"><i class="bi bi-collection me-2"></i> Géneros</a>
+                <a class="nav-link mb-1 {% if request.path.startswith('/tag') %}active{% endif %}"
+                    href="{{ url_for('tag.lista_tags_web') }}"><i class="bi bi-tag me-2"></i> Tags</a>
+                <a class="nav-link mb-1 {% if request.path.startswith('/idioma') %}active{% endif %}"
+                    href="{{ url_for('idioma.lista_idiomas_web') }}"><i class="bi bi-translate me-2"></i> Idiomas</a>
+                <a class="nav-link mb-1 {% if request.path.startswith('/pais') %}active{% endif %}"
+                    href="{{ url_for('pais.lista_paises_web') }}"><i class="bi bi-globe me-2"></i> Países</a>
+                {% endif %}
+                <a class="nav-link mb-1" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>
+                    Cerrar sesión</a>
+            </nav>
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        </aside>
+
+        <div class="flex-fill">
+            <!-- Topbar -->
+            <header class="app-topbar d-flex align-items-center justify-content-between px-3 py-2">
+                <div class="d-flex align-items-center">
+                    <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-lg-none me-2"><i
+                            class="bi bi-list"></i></button>
+                    <a class="text-decoration-none brand-mark me-3" href="{{ url_for('dashboard') }}">Libros</a>
+                    <div class="text-muted small">Recomendaciones personalizadas</div>
+                </div>
+                <div class="d-flex align-items-center">
+                    {% if session.get('user_id') %}
+                    <div class="me-3 text-end">
+                        <div class="fw-semibold">{{ session.get('user_name') or session.get('user_alias') }}</div>
+                        <div class="text-muted small">{{ session.get('rol') or 'Usuario' }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Main content -->
+            <main class="content container-fluid">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category,msg in messages %}
+                <div class="alert alert-{{ 'danger' if category in ['error','danger'] else category }} alert-dismissible fade show"
+                    role="alert">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery + Select2 JS (global) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Select2 fallback: try alternative CDN if primary script didn't expose $.fn.select2 -->
     <script>
-        (function(){
-            function loadScript(src, onload, onerror){
+        (function () {
+            function loadScript(src, onload, onerror) {
                 var s = document.createElement('script'); s.src = src; s.async = true;
                 s.onload = onload; s.onerror = onerror; document.head.appendChild(s);
             }
-            function loadCss(href){
+            function loadCss(href) {
                 var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
             }
 
             // If Select2 not available after a short delay, try fallback sources
-            setTimeout(function(){
-                try{
-                    if(typeof jQuery === 'undefined'){ console.warn('jQuery missing when checking Select2 fallback'); return; }
-                    if(typeof jQuery.fn !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined'){
+            setTimeout(function () {
+                try {
+                    if (typeof jQuery === 'undefined') { console.warn('jQuery missing when checking Select2 fallback'); return; }
+                    if (typeof jQuery.fn !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
                         // already available
                         console.debug('Select2 loaded from primary CDN');
                         return;
@@ -178,266 +316,333 @@
                     // fallback CSS (cdnjs)
                     loadCss('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css');
                     // fallback JS (cdnjs)
-                    loadScript('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js', function(){
+                    loadScript('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js', function () {
                         console.debug('Select2 loaded from fallback CDN (cdnjs)');
-                    }, function(){
+                    }, function () {
                         console.warn('Select2 fallback CDN failed to load.');
                     });
-                }catch(e){ console.warn('Select2 fallback check error', e); }
+                } catch (e) { console.warn('Select2 fallback check error', e); }
             }, 250);
         })();
     </script>
-        <script>
-            (function(){
-                const toggle = document.getElementById('sidebarToggle');
-                const sidebar = document.querySelector('.app-sidebar');
-                // create backdrop element for mobile
-                let backdrop = document.querySelector('.sidebar-backdrop');
-                if(!backdrop){
-                    backdrop = document.createElement('div');
-                    backdrop.className = 'sidebar-backdrop';
-                    document.body.appendChild(backdrop);
-                }
-
-                function showSidebar(){ sidebar.classList.add('show'); backdrop.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-                function hideSidebar(){ sidebar.classList.remove('show'); backdrop.style.display = 'none'; document.body.style.overflow = ''; }
-
-                toggle?.addEventListener('click', function(){
-                    if(window.innerWidth < 992){
-                        if(sidebar.classList.contains('show')) hideSidebar(); else showSidebar();
-                    } else {
-                        sidebar.classList.toggle('collapsed');
-                        // for desktop collapse we can shrink sidebar (handled by CSS if needed)
+    <!-- Toastify (toasts for real-time notifications) -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        // Small guard: if Toastify isn't loaded for any reason, provide a simple fallback
+        if (typeof Toastify === 'undefined') {
+            window.Toastify = function (opts) {
+                return {
+                    showToast: function () {
+                        try { alert((opts && opts.text) || 'Notificación'); } catch (e) { console.log('Toast fallback', opts); }
                     }
+                }
+            }
+        }
+    </script>
+    <script>
+        (function () {
+            const toggle = document.getElementById('sidebarToggle');
+            const sidebar = document.querySelector('.app-sidebar');
+            // create backdrop element for mobile
+            let backdrop = document.querySelector('.sidebar-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+            }
+
+            function showSidebar() { sidebar.classList.add('show'); backdrop.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+            function hideSidebar() { sidebar.classList.remove('show'); backdrop.style.display = 'none'; document.body.style.overflow = ''; }
+
+            toggle?.addEventListener('click', function () {
+                if (window.innerWidth < 992) {
+                    if (sidebar.classList.contains('show')) hideSidebar(); else showSidebar();
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    // for desktop collapse we can shrink sidebar (handled by CSS if needed)
+                }
+            });
+
+            backdrop.addEventListener('click', hideSidebar);
+            // Hide sidebar on resize to desktop state
+            window.addEventListener('resize', function () { if (window.innerWidth >= 992) { hideSidebar(); } });
+        })();
+    </script>
+    <script>
+        
+        const pubSource = new EventSource("{{ url_for('publicacion.obtener_publicaciones') }}");
+        pubSource.onopen = function (event) {
+            // console.log(event.data)
+            console.log("Conexión establecida para publicaciones.");
+        };
+
+        pubSource.onerror = function (event) {
+            // console.log(event)
+            if (event.eventPhase == EventSource.CLOSED) {
+                console.log("Conexión cerrada.");
+            } else {
+                console.error("Error en la conexión de publicaciones:", event);
+            }
+        };
+
+        pubSource.onmessage = function ({data}) {
+            try {
+                console.log("Nueva publicación recibida:", data);
+                // Mostrar una notificación estilo toast (Toastify)
+                try {
+                    var payload = data;
+                    // si viene como string JSON, intentamos parsear para obtener campos legibles
+                    if (typeof data === 'string') {
+                        try { payload = JSON.parse(data); } catch (e) { payload = { message: data }; }
+                    }
+                    var title = payload.title || payload.titulo || payload.mensaje || 'Notificación';
+                    var body = payload.body || payload.descripcion || payload.data || '';
+                    var text = title + (body ? '\n' + (typeof body === 'string' ? body : JSON.stringify(body)) : '');
+                    Toastify({
+                        text: text,
+                        duration: 6000,
+                        close: true,
+                        gravity: 'top',
+                        position: 'right',
+                        backgroundColor: 'linear-gradient(90deg, #00b09b, #96c93d)',
+                        stopOnFocus: true
+                    }).showToast();
+                } catch (e) {
+                    console.warn('Toastify no disponible o error mostrando toast:', e);
+                }
+                // Aquí puedes actualizar la interfaz de usuario con la nueva publicación
+            } catch (e) {
+                console.error("Error al parsear datos de publicación:", e);
+            }
+        };
+    </script>
+    <!-- Global URL templates for JS (replace __ID__ with real id) -->
+    <script>
+        const RECOM_URLS = {
+            delete: "{{ url_for('libro.eliminar_libro', libro_id='__ID__') }}",
+            get: "{{ url_for('libro.obtener_libro_web', libro_id='__ID__') }}",
+            // comentarios
+            comentario_create: "{{ url_for('comentario.crear_comentario') }}",
+            comentario_get: "{{ url_for('comentario.obtener_comentarios') }}",
+            // calificaciones
+            rate_get: "{{ url_for('calificacion.obtener_calificaciones') }}",
+            rate_create: "{{ url_for('calificacion.crear_calificacion') }}",
+            rate_update: "{{ url_for('calificacion.actualizar_calificacion', calificacionId='__ID__') }}"
+        };
+
+        const CURRENT_USER_ID = "{{ session.get('user_id') or '' }}";
+
+        // Modal helpers
+        // function openDetailModal(id){
+        //     const url = RECOM_URLS.get.replace('__ID__', id);
+        //     $.getJSON(url)
+        //       .done(function(data){
+        //         const payload = data?.data || data;
+        //         const libro = payload?.libro || payload;
+        //         const body = document.getElementById('modalDetailBody');
+        //         if(!libro){ body.innerHTML = '<p>No se pudo cargar el detalle.</p>'; }
+        //         else{
+        //             body.innerHTML = `
+        //                 <h5>${libro.titulo || libro['titulo'] || ''}</h5>
+        //                 <p class="mb-1"><strong>Autor:</strong> ${libro.autor || libro['autor'] || ''}</p>
+        //                 <p class="mb-1"><strong>Género:</strong> ${libro.genero || libro['genero'] || ''}</p>
+        //                 <p class="mb-1"><strong>Año:</strong> ${libro.año_publicacion || libro['año_publicacion'] || libro.anio_publicacion || ''}</p>
+        //                 <p class="mb-1"><strong>Editorial:</strong> ${libro.editorial || libro['editorial'] || ''}</p>
+        //                 <p class="mt-2">${libro.descripcion || libro['descripcion'] || ''}</p>
+        //             `;
+        //         }
+        //         const modal = new bootstrap.Modal(document.getElementById('modalDetail'));
+        //         modal.show();
+        //       })
+        //       .fail(function(jqXHR, textStatus, err){ alert('Error cargando detalles: ' + (err||textStatus)); });
+        // }
+
+        function openConfirmDelete(id, title) {
+            document.getElementById('confirmModalTitle').innerText = `Eliminar libro`;
+            document.getElementById('confirmModalBody').innerText = `¿Deseas eliminar "${title}"? Esta acción se puede revertir.`;
+            const btn = document.getElementById('confirmModalBtn');
+            btn.onclick = function () {
+                btn.disabled = true;
+                $.ajax({
+                    url: RECOM_URLS.delete.replace('__ID__', id),
+                    method: 'DELETE',
+                    success: function (response) {
+                        location.reload();
+                    },
+                    error: function (jqXHR) { const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al eliminar'); },
+                    complete: function () { btn.disabled = false; }
+                })
+
+            };
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            modal.show();
+        }
+
+        function openCommentModal(id, title) {
+            document.getElementById('commentModalLabel').innerText = `Comentar: ${title}`;
+            document.getElementById('commentLibroId').value = id;
+            document.getElementById('commentText').value = '';
+            const btn = document.getElementById('commentSubmit');
+            btn.onclick = function () {
+                const comentario = document.getElementById('commentText').value.trim();
+                if (!comentario) { alert('Ingrese un comentario'); return; }
+                btn.disabled = true;
+                $.ajax({
+                    url: RECOM_URLS.comentario_create,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, comentario: comentario })
+                }).done(function () { location.reload(); })
+                    .fail(function (jqXHR) { const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear comentario'); })
+                    .always(function () { btn.disabled = false; });
+            };
+            const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+            modal.show();
+        }
+
+        function openRateModal(id, title) {
+            document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
+            const btn = document.getElementById('rateSubmit');
+            const input = document.getElementById('rateValue');
+            input.value = '5.0';
+            // fetch existing rating for current user
+            $.getJSON(RECOM_URLS.rate_get + '?idUsuario=' + encodeURIComponent(CURRENT_USER_ID) + '&idLibro=' + encodeURIComponent(id))
+                .done(function (resp) {
+                    const payload = resp?.data || resp;
+                    if (payload) {
+                        // if DTO or dict
+                        const existing = payload;
+                        if (existing.calificacion !== undefined) {
+                            input.value = existing.calificacion;
+                        }
+                        // if there is an _id, we'll use update endpoint
+                        if (existing._id) {
+                            btn.onclick = function () {
+                                const val = parseFloat(input.value);
+                                if (isNaN(val) || val < 1 || val > 5) { alert('Ingrese un valor entre 1 y 5'); return; }
+                                btn.disabled = true;
+                                $.ajax({ url: RECOM_URLS.rate_update.replace('__ID__', existing._id), method: 'PUT', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                                    .done(function () { location.reload(); })
+                                    .fail(function (jqXHR) { const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al actualizar calificación'); })
+                                    .always(function () { btn.disabled = false; });
+                            };
+                        } else {
+                            // no existing id -> create
+                            btn.onclick = function () {
+                                const val = parseFloat(input.value);
+                                if (isNaN(val) || val < 1 || val > 5) { alert('Ingrese un valor entre 1 y 5'); return; }
+                                btn.disabled = true;
+                                $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                                    .done(function () { location.reload(); })
+                                    .fail(function (jqXHR) { const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
+                                    .always(function () { btn.disabled = false; });
+                            };
+                        }
+                    }
+                })
+                .fail(function () {
+                    // on fail assume no existing and set create
+                    btn.onclick = function () {
+                        const val = parseFloat(input.value);
+                        if (isNaN(val) || val < 1 || val > 5) { alert('Ingrese un valor entre 1 y 5'); return; }
+                        btn.disabled = true;
+                        $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
+                            .done(function () { location.reload(); })
+                            .fail(function (jqXHR) { const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
+                            .always(function () { btn.disabled = false; });
+                    };
                 });
+            const modal = new bootstrap.Modal(document.getElementById('rateModal'));
+            modal.show();
+        }
+    </script>
 
-                backdrop.addEventListener('click', hideSidebar);
-                // Hide sidebar on resize to desktop state
-                window.addEventListener('resize', function(){ if(window.innerWidth >= 992){ hideSidebar(); } });
-            })();
-        </script>
-            <!-- Global URL templates for JS (replace __ID__ with real id) -->
-            <script>
-                const RECOM_URLS = {
-                    delete: "{{ url_for('libro.eliminar_libro', libro_id='__ID__') }}",
-                    get: "{{ url_for('libro.obtener_libro_web', libro_id='__ID__') }}",
-                    // comentarios
-                    comentario_create: "{{ url_for('comentario.crear_comentario') }}",
-                    comentario_get: "{{ url_for('comentario.obtener_comentarios') }}",
-                    // calificaciones
-                    rate_get: "{{ url_for('calificacion.obtener_calificaciones') }}",
-                    rate_create: "{{ url_for('calificacion.crear_calificacion') }}",
-                    rate_update: "{{ url_for('calificacion.actualizar_calificacion', calificacionId='__ID__') }}"
-                };
-
-                const CURRENT_USER_ID = "{{ session.get('user_id') or '' }}";
-
-                // Modal helpers
-                // function openDetailModal(id){
-                //     const url = RECOM_URLS.get.replace('__ID__', id);
-                //     $.getJSON(url)
-                //       .done(function(data){
-                //         const payload = data?.data || data;
-                //         const libro = payload?.libro || payload;
-                //         const body = document.getElementById('modalDetailBody');
-                //         if(!libro){ body.innerHTML = '<p>No se pudo cargar el detalle.</p>'; }
-                //         else{
-                //             body.innerHTML = `
-                //                 <h5>${libro.titulo || libro['titulo'] || ''}</h5>
-                //                 <p class="mb-1"><strong>Autor:</strong> ${libro.autor || libro['autor'] || ''}</p>
-                //                 <p class="mb-1"><strong>Género:</strong> ${libro.genero || libro['genero'] || ''}</p>
-                //                 <p class="mb-1"><strong>Año:</strong> ${libro.año_publicacion || libro['año_publicacion'] || libro.anio_publicacion || ''}</p>
-                //                 <p class="mb-1"><strong>Editorial:</strong> ${libro.editorial || libro['editorial'] || ''}</p>
-                //                 <p class="mt-2">${libro.descripcion || libro['descripcion'] || ''}</p>
-                //             `;
-                //         }
-                //         const modal = new bootstrap.Modal(document.getElementById('modalDetail'));
-                //         modal.show();
-                //       })
-                //       .fail(function(jqXHR, textStatus, err){ alert('Error cargando detalles: ' + (err||textStatus)); });
-                // }
-
-                function openConfirmDelete(id, title){
-                    document.getElementById('confirmModalTitle').innerText = `Eliminar libro`;
-                    document.getElementById('confirmModalBody').innerText = `¿Deseas eliminar "${title}"? Esta acción se puede revertir.`;
-                    const btn = document.getElementById('confirmModalBtn');
-                    btn.onclick = function(){
-                        btn.disabled = true;
-                        $.ajax({
-                            url: RECOM_URLS.delete.replace('__ID__', id),
-                            method: 'DELETE',
-                            success: function(response){ 
-                                location.reload();
-                             },
-                            error: function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.message || 'Error al eliminar'); },
-                            complete: function(){ btn.disabled = false; }
-                        })
-                        
-                    };
-                    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                    modal.show();
-                }
-
-                function openCommentModal(id, title){
-                    document.getElementById('commentModalLabel').innerText = `Comentar: ${title}`;
-                    document.getElementById('commentLibroId').value = id;
-                    document.getElementById('commentText').value = '';
-                    const btn = document.getElementById('commentSubmit');
-                    btn.onclick = function(){
-                        const comentario = document.getElementById('commentText').value.trim();
-                        if(!comentario){ alert('Ingrese un comentario'); return; }
-                        btn.disabled = true;
-                        $.ajax({
-                            url: RECOM_URLS.comentario_create,
-                            method: 'POST',
-                            contentType: 'application/json',
-                            data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, comentario: comentario })
-                        }).done(function(){ location.reload(); })
-                          .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear comentario'); })
-                          .always(function(){ btn.disabled = false; });
-                    };
-                    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
-                    modal.show();
-                }
-
-                function openRateModal(id, title){
-                    document.getElementById('rateModalLabel').innerText = `Calificar: ${title}`;
-                    const btn = document.getElementById('rateSubmit');
-                    const input = document.getElementById('rateValue');
-                    input.value = '5.0';
-                    // fetch existing rating for current user
-                    $.getJSON(RECOM_URLS.rate_get + '?idUsuario=' + encodeURIComponent(CURRENT_USER_ID) + '&idLibro=' + encodeURIComponent(id))
-                      .done(function(resp){
-                          const payload = resp?.data || resp;
-                          if(payload){
-                              // if DTO or dict
-                              const existing = payload;
-                              if(existing.calificacion !== undefined){
-                                  input.value = existing.calificacion;
-                              }
-                              // if there is an _id, we'll use update endpoint
-                              if(existing._id){
-                                  btn.onclick = function(){
-                                      const val = parseFloat(input.value);
-                                      if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                                      btn.disabled = true;
-                                      $.ajax({ url: RECOM_URLS.rate_update.replace('__ID__', existing._id), method: 'PUT', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
-                                        .done(function(){ location.reload(); })
-                                        .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al actualizar calificación'); })
-                                        .always(function(){ btn.disabled = false; });
-                                  };
-                              } else {
-                                  // no existing id -> create
-                                  btn.onclick = function(){
-                                      const val = parseFloat(input.value);
-                                      if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                                      btn.disabled = true;
-                                      $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
-                                        .done(function(){ location.reload(); })
-                                        .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
-                                        .always(function(){ btn.disabled = false; });
-                                  };
-                              }
-                          }
-                      })
-                      .fail(function(){
-                          // on fail assume no existing and set create
-                          btn.onclick = function(){
-                              const val = parseFloat(input.value);
-                              if(isNaN(val) || val < 1 || val > 5){ alert('Ingrese un valor entre 1 y 5'); return; }
-                              btn.disabled = true;
-                              $.ajax({ url: RECOM_URLS.rate_create, method: 'POST', contentType: 'application/json', data: JSON.stringify({ idUsuario: CURRENT_USER_ID, idLibro: id, calificacion: val }) })
-                                .done(function(){ location.reload(); })
-                                .fail(function(jqXHR){ const d = jqXHR.responseJSON || {}; alert(d.msg || 'Error al crear calificación'); })
-                                .always(function(){ btn.disabled = false; });
-                          };
-                      });
-                    const modal = new bootstrap.Modal(document.getElementById('rateModal'));
-                    modal.show();
-                }
-            </script>
-
-            <!-- Detail Modal -->
-            <div class="modal fade" id="modalDetail" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Detalle del libro</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="modalDetailBody">
-                            <!-- llenado por JS -->
-                            <p>Cargando...</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        </div>
-                    </div>
+    <!-- Detail Modal -->
+    <div class="modal fade" id="modalDetail" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalle del libro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetailBody">
+                    <!-- llenado por JS -->
+                    <p>Cargando...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Confirm Modal -->
-            <div class="modal fade" id="confirmModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="confirmModalTitle">Confirmar</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="confirmModalBody">¿Estás seguro?</div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button id="confirmModalBtn" type="button" class="btn btn-danger">Eliminar</button>
-                        </div>
-                    </div>
+    <!-- Confirm Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalTitle">Confirmar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody">¿Estás seguro?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="confirmModalBtn" type="button" class="btn btn-danger">Eliminar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Rate Modal -->
-            <div class="modal fade" id="rateModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="rateModalLabel">Calificar libro</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">Calificación (1.0 - 5.0)</label>
-                                <input id="rateValue" type="number" step="0.1" min="1" max="5" class="form-control" value="5.0" />
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button id="rateSubmit" type="button" class="btn btn-success">Enviar</button>
-                        </div>
+    <!-- Rate Modal -->
+    <div class="modal fade" id="rateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rateModalLabel">Calificar libro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Calificación (1.0 - 5.0)</label>
+                        <input id="rateValue" type="number" step="0.1" min="1" max="5" class="form-control"
+                            value="5.0" />
                     </div>
                 </div>
-            </div>
-
-            <!-- Comment Modal -->
-            <div class="modal fade" id="commentModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="commentModalLabel">Comentar libro</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <input type="hidden" id="commentLibroId" />
-                            <div class="mb-3">
-                                <label class="form-label">Comentario</label>
-                                <textarea id="commentText" class="form-control" rows="4"></textarea>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button id="commentSubmit" type="button" class="btn btn-primary">Enviar</button>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="rateSubmit" type="button" class="btn btn-success">Enviar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            {% block extra_js %}{% endblock %}
-    </body>
+    <!-- Comment Modal -->
+    <div class="modal fade" id="commentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="commentModalLabel">Comentar libro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="commentLibroId" />
+                    <div class="mb-3">
+                        <label class="form-label">Comentario</label>
+                        <textarea id="commentText" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="commentSubmit" type="button" class="btn btn-primary">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block extra_js %}
+
+    {% endblock %}
+</body>
+
 </html>

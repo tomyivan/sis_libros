@@ -14,7 +14,7 @@ def obtenerUsuarioId(idUsuario):
     return usuario_dep.usuario_controlador.obtenerUsuario(idUsuario)
 
 @usuarioRuta.route('/crear', methods=['POST'])
-@token_required
+# @token_required
 def crear_usuario():
     return usuario_dep.usuario_controlador.crearUsuario()
 

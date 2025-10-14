@@ -1,10 +1,9 @@
+from datetime import datetime
 from flask import request, jsonify, render_template, redirect, url_for, flash, current_app
-from src.app.libro_app import LibroApp
-from src.infrastuctura.dependencias import categoria_dep, tag_dep, genero_dep, idioma_dep, pais_dep
+from src.infrastuctura.dependencias import categoria_dep, tag_dep, genero_dep, idioma_dep, pais_dep, recomendacion_dep, publicacion_dep
+
 from src.util.responseApi import ResponseApi
-from src.custom.error_custom import APIError
 from marshmallow import Schema, fields, ValidationError
-from typing import List
 import os
 from werkzeug.utils import secure_filename
 
@@ -57,6 +56,7 @@ class LibroControlador:
     def obtenerLibros(self):
         """Obtener lista de libros con filtros opcionales"""
         try:
+            # print("entor")
             # Obtener parámetros de query: filtros, paginación y búsqueda
             filtros = {}
             if request.args.get('titulo'):
@@ -91,7 +91,7 @@ class LibroControlador:
 
             # Convertir a dict para JSON
             libros_dict = [libro.__dict__ for libro in libros]
-
+            publicacion_dep.pubApp.nuevaPublicacion({'mensaje': 'Nuevo libro agregado','fecha_creacion': str(datetime.now())})
             return jsonify(ResponseApi.exito('Libro encontrados',{
                 'libros': libros_dict,
                 'total': len(libros_dict),
@@ -271,9 +271,9 @@ class LibroControlador:
         """Renderiza la vista web detallada de un libro"""
         try:
             libro = self.app.obtenerLibroInfo(libro_id)
-            print(libro)
+            recomendaciones = recomendacion_dep.recomendarApp.obtenerRecomendacionPorLibro(libro_id)
             if libro:
-                return render_template('books/info.html', libro=libro.__dict__)
+                return render_template('books/info.html', libro=libro.__dict__, recomendaciones=recomendaciones)
             else:
                 flash("Libro no encontrado", 'warning')
                 return redirect(url_for('libro.lista_libros_web'))

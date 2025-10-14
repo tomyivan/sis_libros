@@ -102,12 +102,12 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="helper">¿No tienes cuenta? Contacta al administrador</small>
-                    <a href="#" class="helper">Recuperar contraseña</a>
+                    <small class="helper">¿No tienes cuenta? <a href="{{ url_for('auth.nuevo_usuario') }}" class="helper">Registrate</a></small>
+                    <!-- <a href="#" class="helper">Recuperar contraseña</a> -->
                 </div>
             </form>
 
-            <footer class="small">© {{ config.APP_NAME if config is defined else 'SisLibros' }}{% if current_year is defined %} - {{ current_year }}{% endif %}</footer>
+            <footer class="small"> {{ config.APP_NAME if config is defined else 'SisLibros' }}{% if current_year is defined %} - {{ current_year }}{% endif %}</footer>
         </div>
     </main>
 

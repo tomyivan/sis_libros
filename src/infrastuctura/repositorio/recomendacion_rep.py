@@ -14,7 +14,7 @@ class RecomendacionRepositorio(RecomendacionPuerto):
         self.collection = self.db.recomendaciones
         self.redis = redCli
 
-    def obtenerRecomendacionRedis(self, idLibro: str):
+    def obtenerRecomendacionPorLibro(self, idLibro: str):
         """Obtener recomendaciones desde Redis.
 
         Prioridad de lectura:

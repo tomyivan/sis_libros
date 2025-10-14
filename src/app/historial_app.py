@@ -5,7 +5,6 @@ class HistoriaApp:
         self.repo = repo
 
     def registrarHistorial(self, historial: dict):
-        print(historial)
         return self.repo.registrarHistorial(historial_mod.HistorialModelo(**historial))
 
     def obtenerHistorial(self, usuario_id: str, libro: str = "" ):

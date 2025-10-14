@@ -12,6 +12,8 @@ from src.infrastuctura.http.historial.historial_ruta import historialRuta, init_
 from src.infrastuctura.http.comentario.comentario_ruta import comentarioRuta, init_comentario_routes
 from src.infrastuctura.http.calificacion.calificacion_ruta import calificacionRuta, init_calificacion_routes
 from src.infrastuctura.dependencias.recomendacion_dep import iniciar_recomendacion
+from src.infrastuctura.http.publicacion.publicacion_ruta import publicacionRuta
+from src.infrastuctura.dependencias.auth_dep import auth_controller
 from src.custom.error_custom import APIError
 from src.util.responseApi import ResponseApi
 import dotenv
@@ -61,8 +63,9 @@ app.register_blueprint(idiomaRuta)
 app.register_blueprint(historialRuta)
 app.register_blueprint(comentarioRuta)
 app.register_blueprint(calificacionRuta)
+app.register_blueprint(publicacionRuta)
 # Inicializar controlador de auth para rutas globales
-auth_controller = AuthControlador()
+# auth_controller = AuthControlador()
 
 
 @app.route('/')

@@ -131,7 +131,7 @@
                             <div class="text-warning">{{ '★' * (c.calificacion|int) }}{{ '☆' * (5 - (c.calificacion|int)) }}</div>
                           {% endif %}
                         </div>
-                        <p class="mb-0 mt-2 text-muted">{{ c.texto if c.texto else c.mensaje if c.mensaje else '' }}</p>
+                        <p class="mb-0 mt-2 text-muted">{{ c.texto if c.texto else c.comentario if c.comentario else '' }}</p>
                       </div>
                     {% endfor %}
                   </div>
@@ -140,8 +140,8 @@
                 {% endif %}
               </div>
 
+             
               <script>
-                // Animación escalonada para comentarios
                 document.addEventListener('DOMContentLoaded', function(){
                   const items = document.querySelectorAll('.comment-item');
                   items.forEach((it, idx) => {
@@ -149,16 +149,19 @@
                   });
                 });
               </script>
-
               <div class="mt-3 small text-muted">
                 <div><strong>ID:</strong> <code>{{ libro._id }}</code></div>
                 <div><strong>Origen:</strong> {{ libro.origen_pais }}</div>
               </div>
             </div>
+            
           </div>
+          
         </div>
       </div>
     </div>
+  {% include 'books/_recomendaciones.html' with context %}
+              
   </div>
 
 {% endblock %}

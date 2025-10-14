@@ -9,8 +9,6 @@ class CrearLibroServicio:
     def crearLibro(self, libro_data: dict) -> str:
         """Crear un nuevo libro con validaciones de negocio"""
         # Validaciones de negocio
-        
-        print(libro_data)
         # Crear el modelo del libro
         libro = libro_mod.LibroModelo(
             titulo=libro_data["titulo"],

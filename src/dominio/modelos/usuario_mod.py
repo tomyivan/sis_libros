@@ -14,6 +14,7 @@ class UsuarioModelo:
     fecha_creacion: datetime
     activo: bool = True
     fecha_modificacion: datetime = None
+    rol: str = "usuario"  # rol por defecto
 
 @dataclass
 class UsuarioModeloDTO:
@@ -27,7 +28,7 @@ class UsuarioModeloDTO:
     fecha_creacion: datetime
     fecha_modificacion: datetime = None
     password_hash: str = None
-
+    rol: str = "usuario"
 
 @dataclass
 class FiltroUsuarioModelo:

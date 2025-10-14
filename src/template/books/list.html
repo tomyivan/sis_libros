@@ -117,7 +117,6 @@
       method: 'GET',
       data: { ...filtros, offset, limit },
       success: function(response) {
-        console.log(response);
         if (response.data.libros && response.data.libros.length > 0) {
           $('#noBooksMsg').addClass('d-none');
           response.data.libros.forEach(libro => {
@@ -168,7 +167,6 @@
                   </div>
                 </div>
               </div>`;
-            console.log(libroHtml);
             $('#booksList').append(libroHtml);
   }
 

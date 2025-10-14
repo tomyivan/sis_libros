@@ -39,5 +39,29 @@ class RecomendarPorContenido:
             print(f"Recomendaciones para el libro {idLibro}: {similares[:10]}")
         return True
 
+    def agregarNuevaRecomendacion(self, idLibro: str) -> bool:
+        libros = self.obtenerLibroServicio.obtenerLibros()
+        ids = []
+        textos = []
+        for libro in libros:
+            ids.append(libro._id)
+            contenido = libro.titulo + ' ' + (libro.descripcion or '') + ' ' + ' '.join(libro.tags)
+            textos.append(contenido)
+        tfidf = TfidfVectorizer(stop_words=self.stopWord)
+        tfidfMatrix = tfidf.fit_transform(textos)
+
+        cosenoSim = cosine_similarity(tfidfMatrix, tfidfMatrix) 
         
+        if idLibro in ids:
+            idx = ids.index(idLibro)
+            similares = list(enumerate(cosenoSim[idx]))
+            similares = sorted(similares, key=lambda x: x[1], reverse=True) 
+            similares = [ids[i] for i, score in similares if ids[i] != idLibro]
+            # Guardar lista directamente; el repositorio la serializará como JSON
+            self.repoRecomendacion.guardarRecomendacionRedis(idLibro, similares[:10])
+            print(f"Recomendaciones para el libro {idLibro}: {similares[:10]}")
+            return True
+        else:
+            print(f"El libro con ID {idLibro} no se encontró en la base de datos.")
+            return False
         

@@ -9,7 +9,6 @@ class AutenticarServicio:
         try:
             # Obtener el usuario por alias
             usuario = self.obtenerUsuarioSrv.obtenerUsuario({"alias": alias})
-            
             if not usuario:
                 print(f"Usuario no encontrado para alias: {alias}")
                 return None
@@ -26,7 +25,7 @@ class AutenticarServicio:
                 # No generamos ni devolvemos tokens; la sesión del servidor controlará la autenticación web
                 return auth_mod.AuthModelo(
                     token=None,
-                    rol="usuario",
+                    rol=usuario.rol,
                     idUsuario=user_id,
                     usuario=usuario.nombre,
                     alias=usuario.alias
