@@ -21,6 +21,7 @@ class TagApp:
                 return self.obtener_svc.buscarTags(q, offset=offset, limit=limit)
             # fallback: traer todos y filtrar en memoria (no ideal)
             all_tags = self.obtener_svc.repo.obtenerTags()
+            print(all_tags)
             filtered = [t for t in all_tags if q.lower() in (t.nombre or '').lower()]
             return filtered[offset:offset+limit]
         # paginación directa si el repo lo soporta

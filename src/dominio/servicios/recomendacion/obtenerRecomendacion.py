@@ -9,5 +9,4 @@ class ObtenerRecomendacionServicio:
         recomendaciones = self.repo.obtenerRecomendacionPorLibro(idLibro)
         if recomendaciones is None:
             return []
-        print(len(recomendaciones))
         return recomendaciones

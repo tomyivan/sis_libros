@@ -167,8 +167,9 @@ class LibroControlador:
             # Crear libro
             libro_id = self.app.crearLibro(validated_data)
 
-            return jsonify(ResponseApi.exito({
-                'message': 'Libro creado exitosamente',
+            return jsonify(ResponseApi.exito(
+                    "Libro creado exitosamente"
+                ,{
                 'libro_id': libro_id
             }, 201))
             
@@ -204,7 +205,6 @@ class LibroControlador:
                     'disponible': True,
                     'tags': form.get('tags').split(',') if form.get('tags') else []
                 }
-
                 # handle file upload (portada)
                 portada = request.files.get('portada')
                 if portada and portada.filename:
@@ -223,14 +223,11 @@ class LibroControlador:
                     data['portada_url'] = url_for('static', filename=f'uploads/{filename_safe}', _external=False)
             else:
                 data = request.get_json()
-
             # Validar datos con Marshmallow
             schema = LibroUpdateSchema()
             validated_data = schema.load(data)
-
             # Actualizar libro
-            modified_count = self.app.actualizarLibro(libro_id, validated_data)
-            
+            modified_count = self.app.actualizarLibro(libro_id, validated_data)            
             if modified_count > 0:
                 return jsonify(ResponseApi.exito('Libro actualizado exitosamente',{
                     'modified_count': modified_count
@@ -308,30 +305,20 @@ class LibroControlador:
             paises = []
             try:
                 categorias = [c.__dict__ for c in categoria_dep.categoria_app.obtenerCategorias()]
-            except Exception:
-                categorias = []
-            try:
-                tags = [t.__dict__ for t in tag_dep.tag_app.obtenerTags()]
-            except Exception:
-                tags = []
-            try:
-                generos = [g.__dict__ for g in genero_dep.genero_app.obtenerGeneros()]
-            except Exception:
-                generos = []
-            try:
-                idiomas = [i.__dict__ for i in idioma_dep.idioma_app.obtenerIdiomas()]
-            except Exception:
-                idiomas = []
-            try:
-                paises = [p.__dict__ for p in pais_dep.pais_app.obtenerPaises()]
-            except Exception:
-                paises = []
-
-            if edit_id:
-                libro = self.app.obtenerLibro(edit_id)
-                if libro:
-                    data = libro.__dict__
-                    return render_template('books/create.html', data=data, categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
-            return render_template('books/create.html', categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
+                tags = [t.__dict__ for t in tag_dep.tag_app.obtenerTags(0,1000)]
+                generos = [g.__dict__ for g in genero_dep.genero_app.obtenerGeneros(0,1000)]
+                idiomas = [i.__dict__ for i in idioma_dep.idioma_app.obtenerIdiomas(0,1000)]
+                paises = [p.__dict__ for p in pais_dep.pais_app.obtenerPaises(0,1000)]
+                if edit_id:
+                    libro = self.app.obtenerLibro(edit_id)
+                    if libro:
+                        data = libro.__dict__
+                        return render_template('books/create.html', data=data, categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
+                return render_template('books/create.html', categorias=categorias, tags=tags, generos=generos, idiomas=idiomas, paises=paises)
+            except Exception as e:
+                print(e)
+                flash(f"Error al cargar formulario: {str(e)}", 'danger')
+                return redirect(url_for('libro.lista_libros_web'))
+            
         
 

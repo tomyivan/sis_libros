@@ -1,10 +1,13 @@
 from src.dominio.modelos import libro_mod
 from src.dominio.puertos import libro_prt
 from datetime import datetime
-
+from src.dominio.servicios.recomendacion import recomendacionPorContenido_srv
 class CrearLibroServicio:
-    def __init__(self, repositorio: libro_prt.LibroPuerto):
+    def __init__(self, repositorio: libro_prt.LibroPuerto,
+                 recomendacion_servicio: recomendacionPorContenido_srv.RecomendarPorContenido
+                 ):
         self.repositorio = repositorio
+        self.recomendacion_servicio = recomendacion_servicio
 
     def crearLibro(self, libro_data: dict) -> str:
         """Crear un nuevo libro con validaciones de negocio"""
@@ -26,5 +29,6 @@ class CrearLibroServicio:
             portada_url=libro_data.get("portada_url"),
             tags=libro_data.get("tags", [])
         )
-
-        return self.repositorio.crearLibro(libro)
+        idLibro =  self.repositorio.crearLibro(libro)
+        self.recomendacion_servicio.agregarNuevaRecomendacion(libro, idLibro)
+        return idLibro

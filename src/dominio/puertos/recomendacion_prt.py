@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
+
+from src.dominio.modelos import recomendacion_mod
 class RecomendacionPuerto(ABC):
    
     # @abstractmethod
@@ -11,5 +13,5 @@ class RecomendacionPuerto(ABC):
         pass
 
     @abstractmethod
-    def obtenerRecomendacionPorLibro(self, idLibro: str) -> List[str]:
+    def obtenerRecomendacionPorLibro(self, idLibro: str) -> List[recomendacion_mod.RecomendacionModeloDTO]:
         pass

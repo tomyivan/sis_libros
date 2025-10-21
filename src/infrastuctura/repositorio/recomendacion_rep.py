@@ -63,8 +63,6 @@ class RecomendacionRepositorio(RecomendacionPuerto):
         Ahora guarda objetos completos de libros en la clave `recomendaciones:books:{idLibro}` como
         una LIST donde cada elemento es un JSON con el objeto del libro. También mantiene un SET
         con los ids en `recomendaciones:ids:{idLibro}` para búsquedas rápidas.
-
-        `recomendaciones` puede ser una lista de ids (str/ObjectId) o una lista de dicts.
         """
         set_key = f"recomendaciones:set:{idLibro}"
         ids_key = f"recomendaciones:ids:{idLibro}"
