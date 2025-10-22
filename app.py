@@ -81,4 +81,8 @@ def handle_api_error(error):
     return jsonify(ResponseApi.error(error.message, [])) 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=int(os.getenv("PORT")))
+    # Usar un puerto por defecto si no está configurado en .env
+    port = int(os.getenv('PORT', '5000'))
+    # Permitir controlar debug por variable de entorno FLASK_DEBUG
+    debug = os.getenv('FLASK_DEBUG', 'True').lower() in ('1', 'true', 'yes')
+    app.run(debug=debug, port=port)

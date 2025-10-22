@@ -34,4 +34,8 @@ class LibroPuerto(ABC):
     def eliminarLibro(self, libroId: str) -> bool:
         """Eliminar/desactivar un libro"""
         pass
-    
+
+    @abstractmethod
+    def totalLibros(self) -> int:
+        """Contar el total de libros que cumplen con un filtro dado."""
+        pass

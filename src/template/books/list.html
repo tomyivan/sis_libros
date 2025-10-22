@@ -188,7 +188,9 @@
 
   $(document).on('click', '#booksLoadMore', function() {
     const offset = $('#booksList .book-card').length;
-    obtenerLibros({}, offset, 6);
+    search = $('#booksSearch').val();
+
+    obtenerLibros({ titulo: search.length > 3 ? search : undefined   }, offset, 6);
   });
 
 </script>

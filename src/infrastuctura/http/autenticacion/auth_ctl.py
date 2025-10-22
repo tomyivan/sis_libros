@@ -1,12 +1,10 @@
 from flask import request, jsonify, render_template, redirect, url_for, session, flash
-# from src.dominio.servicios.usuario.autenticar_srv import AutenticarServicio
-# from src.dominio.servicios.usuario.obtenerUsuario_srv import ObtenerUsuarioServicio
-# from src.infrastuctura.repositorio.usuario_rep import UsuarioRepositorio
-# from src.helpers.mongoconn_hlp import MongoConnection
 from src.util.responseApi import ResponseApi
-# from src.custom.error_custom import APIError
 from marshmallow import Schema, fields, ValidationError
 from src.app.auth_app import AuthApp
+from src.app.libro_app import LibroApp
+from src.dominio.servicios.libro.obtenerLibro_srv import ObtenerLibroServicio
+
 import functools
 
 class LoginSchema(Schema):
@@ -16,13 +14,16 @@ class LoginSchema(Schema):
                            error_messages={'required': 'La contraseña es requerida', 'invalid': 'La contraseña no puede estar vacía'})
 
 class AuthControlador:
-    def __init__(self, auth_service: AuthApp):
+    def __init__(self, auth_service: AuthApp,
+                 libroSrv: ObtenerLibroServicio
+                 ):
         # Inicializar servicios
         # mongo_conn = MongoConnection()
         # usuario_repo = UsuarioRepositorio(mongo_conn)
         # obtener_usuario_srv = ObtenerUsuarioServicio(usuario_repo)
         # self.auth_service = AutenticarServicio(obtener_usuario_srv)
         self.auth_service = auth_service
+        self.libroService = libroSrv
 
     def mostrar_login(self):
         """Muestra la pantalla de login"""
@@ -114,8 +115,9 @@ class AuthControlador:
             'alias': session.get('user_alias'),
             'rol': session.get('rol')
         }
+        total = self.libroService.totalLibros()
         print(session.get('rol')    )
-        return render_template('dashboard/dashboard.html', user=user_data)
+        return render_template('dashboard/dashboard.html', user=user_data, totalLibros=total)
     
 
 

@@ -201,6 +201,14 @@ class LibroRepositorio(libro_prt.LibroPuerto):
             print(f"Error al eliminar libro: {e}")
             raise APIError("Error al eliminar libro")
 
+    def totalLibros(self) -> int:
+        try:
+            count = self.collection.count_documents({})
+            return count
+        except Exception as e:
+            print(f"Error al contar libros: {e}")
+            raise APIError("Error al contar libros")
+
     def _construir_query(self, filtro: libro_mod.FiltroLibroModelo) -> dict:
         """Construye la query de MongoDB basada en el filtro"""
         query = {}

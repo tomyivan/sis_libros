@@ -35,53 +35,27 @@
 
 		<div class="col-lg-8">
 			<div class="row g-3">
-				<div class="col-6">
+				<div class="col-12">
 					<div class="card p-3">
 						<div class="d-flex justify-content-between align-items-center">
 							<div>
 								<div class="text-muted small">Libros totales</div>
-								<div class="fs-4 fw-bold">{{ stats.total_libros if stats and stats.total_libros is not none else '—' }}</div>
+								<!-- <div class="fs-4 fw-bold">{{ stats.total_libros if stats and stats.total_libros is not none else '—' }}</div> -->
+								<div class="fs-4 fw-bold">{{ totalLibros if totalLibros is not none else '—' }}</div>
 							</div>
 							<i class="bi bi-book-half fs-2 text-secondary"></i>
 						</div>
 					</div>
 				</div>
-
-				<div class="col-6">
-					<div class="card p-3">
-						<div class="d-flex justify-content-between align-items-center">
-							<div>
-								<div class="text-muted small">libros vistos</div>
-								<div class="fs-4 fw-bold">{{ stats.librosVistos if stats and stats.librosVistos is not none else '—' }}</div>
-							</div>
-							<i class="bi bi-eye fs-2 text-info"></i>
-						</div>
-					</div>
-				</div>
-
 				<div class="col-12">
-					<div class="card p-3">
-						<h5>Libros recientes</h5>
-						{% if recent_libros and recent_libros|length > 0 %}
-							<ul class="list-group list-group-flush">
-								{% for libro in recent_libros %}
-									<li class="list-group-item d-flex justify-content-between align-items-start">
-										<div>
-											<div class="fw-semibold">{{ libro.get('titulo') }}</div>
-											<div class="text-muted small">{{ libro.get('autor') }} • {{ libro.get('genero') }}</div>
-										</div>
-										<div>
-											<a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('libro.obtener_libro_web', libro_id=libro.get('_id') or libro.get('id')) }}">Ver</a>
-											<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('libro.crear_libro_web') }}?edit_id={{ libro.get('_id') or libro.get('id') }}">Editar</a>
-										</div>
-									</li>
-								{% endfor %}
-							</ul>
-						{% else %}
-							<p class="text-muted mb-0">Aún no hay libros recientes. Puedes <a href="{{ url_for('libro.crear_libro_web') }}">agregar uno</a>.</p>
-						{% endif %}
+					<div id="libroLista" class="row g-3" aria-live="polite" aria-atomic="true"></div>
+					<div id="noBooksMsg" class="alert alert-info mt-3 d-none" role="status">No se encontraron libros para los filtros aplicados.</div>
+					<div class="d-flex justify-content-center mt-3">
+						<button id="loadMoreBtn" class="btn btn-outline-primary">Cargar más</button>
 					</div>
 				</div>
+					
+				
 			</div>
 		</div>
 
@@ -109,8 +83,10 @@
 
 {% block extra_js %}
 <script>
-$(document).ready(function(){
-
+$(function(){
+	// Estado de paginación cliente
+	let offset = 0;
+	const limit = 6;
 
 	// Render suggestions into the dropdown
 	function renderHistorial(items){
@@ -128,7 +104,6 @@ $(document).ready(function(){
 				if(e.type === 'click' || (e.type === 'keypress' && (e.key === 'Enter' || e.key === ' '))){
 					$('#libroText').val(it.textoBusqueda);
 					$('#historialDropdown').hide();
-					// trigger a search submit
 					$('#buscarLibro').submit();
 				}
 			});
@@ -160,35 +135,89 @@ $(document).ready(function(){
 		});
 	}
 
-
-
 	$('#libroText').on('input', function(){
 		const q = $(this).val().trim();
-		if(q.length >= 1) { // show suggestions starting at 1 char for nicer UX
-			fetchHistorial(q);
-		} else {
-			// show recent (empty query)
-			fetchHistorial('');
-		}
+		if(q.length >= 1) fetchHistorial(q);
+		else fetchHistorial('');
 	});
 
 	$('#buscarLibro').on('submit', function(e){
 		e.preventDefault();
 		const buscar = $('#libroText').val()?.trim();
+		offset = 0; // resetear paginación al nueva búsqueda
+		$('#libroLista').empty();
+		obtenerLibros({ titulo: buscar }, offset, limit);
 		if(!buscar) return;
 		// Register historial entry (best-effort)
-		$.ajax({
-			url: "{{ url_for('historial.crear_historial') }}",
-			type: "POST",
-			data: { textoBusqueda: buscar },
-			success: function(){
-				// Optionally refresh suggestions
-				fetchHistorial(buscar);
-			},
-			error: function(){ }
-		});
+		$.post("{{ url_for('historial.crear_historial') }}", { textoBusqueda: buscar });
 		$('#historialDropdown').hide();
 	});
+
+	$('#loadMoreBtn').on('click', function(){
+		offset += limit;
+		const buscar = $('#libroText').val()?.trim();
+		obtenerLibros({ titulo: buscar }, offset, limit);
+	});
+
+	function obtenerLibros(filtros = {}, offsetParam = 0, limitParam = limit) {
+		// $('#loadMoreBtn').prop('disabled', true).text('Cargando...');
+		const apiUrl = '{{ url_for("libro.obtener_libros_web") }}';
+		$.ajax({
+			url: apiUrl,
+			method: 'GET',
+			data: { ...filtros, offset: offsetParam, limit: limitParam },
+			success: function(response) {
+				console.log('Libros obtenidos:', response);
+				const libros = response.data && response.data.libros ? response.data.libros : [];
+				if (libros.length > 0) {
+					$('#noBooksMsg').addClass('d-none');
+					libros.forEach(libro => appendLibro(libro));
+				} else if (offsetParam === 0) {
+					$('#noBooksMsg').removeClass('d-none');
+				}
+				// Re-enable load more if we received a full page
+				if (libros.length >= limitParam) {
+					$('#loadMoreBtn').prop('disabled', false).text('Cargar más');
+				} else {
+					$('#loadMoreBtn').prop('disabled', true).text('No hay más');
+				}
+			},
+			error: function() {
+				alert('Error al obtener los libros.');
+				$('#loadMoreBtn').prop('disabled', false).text('Cargar más');
+			}
+		});
+	}
+
+	function appendLibro(libro) {
+		const id = libro._id || libro.id || libro.id_libro || '';
+		const titulo = (libro.titulo || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		const autor = (libro.autor || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		const editorial = (libro.editorial || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		const etiquetas = (libro.genero || []).map(g => `<span class="badge bg-secondary">${String(g).replace(/</g,'&lt;')}</span>`).join('');
+		const anio = libro.año_publicacion || libro.anio_publicacion || '';
+		const descripcion = libro.descripcion ? String(libro.descripcion).substring(0,120).replace(/</g,'&lt;') : '';
+
+		const libroHtml = `
+			<div class="col-6 col-sm-4 col-md-3 mb-3" data-id="${id}">
+				<div class="card h-100 book-card small-card shadow-sm">
+					${libro.portada_url ? `<img src="${libro.portada_url}" loading="lazy" class="card-img-top book-card-img" alt="Portada de ${titulo}">` : `<div class="book-card-img d-flex align-items-center justify-content-center text-muted">No disponible</div>`}
+					<div class="card-body d-flex flex-column py-2 px-2">
+						<h6 class="card-title mb-1">${titulo}</h6>
+						<p class="card-text mb-1 text-muted small">${autor} — ${editorial}</p>
+						<div class="card-badges mb-1">${etiquetas}<span class="badge bg-light text-dark">${libro.origen_pais || ''}</span><span class="badge bg-info text-white">${anio}</span></div>
+						<p class="card-description text-muted xsmall mb-2">${descripcion}</p>
+						<div class="mt-auto d-flex gap-1">
+							<button class="btn btn-sm btn-primary w-100 view-book" title="Ver" data-id="${id}">Ver</button>
+						</div>
+					</div>
+				</div>
+			</div>`;
+
+		$('#libroLista').append(libroHtml);
+	}
+
+	// Cargar primeras tarjetas al cargar la página
 });
 </script>
 {% endblock %}
@@ -223,5 +252,13 @@ $(document).ready(function(){
 .historial-item .hint { font-size: .85rem; color: #6b7280; }
 .historial-item .text { font-size: .95rem; color: #0f172a; font-weight:600; }
 .historial-empty { padding: 10px 12px; color:#94a3b8; font-size:.9rem; }
+/* Compact card styles */
+.small-card .book-card-img { height: 140px; object-fit: cover; }
+.small-card .card-title { font-size: 0.95rem; }
+.small-card .card-text { font-size: 0.75rem; }
+.small-card .card-description.xsmall { font-size: 0.7rem; color: #6b7280; }
+.small-card .card-body { padding: .5rem; }
+.small-card .btn { padding: .35rem .5rem; font-size: .82rem; }
+.small-card .card-badges .badge { font-size: .65rem; margin-right: 3px; }
 </style>
 {% endblock %}

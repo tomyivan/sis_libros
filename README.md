@@ -190,22 +190,6 @@ pip install -r requirements.txt
 - Verifica que el `JWT_SECRET_KEY` sea el mismo en `.env`
 - Verifica que el token no haya expirado (24 horas por defecto)
 
-## 📝 Próximas características
-
-- [ ] Registro de usuarios
-- [ ] Recuperación de contraseña  
-- [ ] Roles y permisos
-- [ ] Sistema de recomendaciones ML
-- [ ] API REST completa para libros
-- [ ] Tests unitarios e integración
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
 
 ## 📄 Licencia
 

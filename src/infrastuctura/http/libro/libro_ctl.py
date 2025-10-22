@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import request, jsonify, render_template, redirect, url_for, flash, current_app
+from flask import request, jsonify, render_template, redirect, session, url_for, flash, current_app
 from src.infrastuctura.dependencias import categoria_dep, tag_dep, genero_dep, idioma_dep, pais_dep, recomendacion_dep, publicacion_dep
 
 from src.util.responseApi import ResponseApi
@@ -91,7 +91,6 @@ class LibroControlador:
 
             # Convertir a dict para JSON
             libros_dict = [libro.__dict__ for libro in libros]
-            publicacion_dep.pubApp.nuevaPublicacion({'mensaje': 'Nuevo libro agregado','fecha_creacion': str(datetime.now())})
             return jsonify(ResponseApi.exito('Libro encontrados',{
                 'libros': libros_dict,
                 'total': len(libros_dict),
@@ -166,6 +165,7 @@ class LibroControlador:
 
             # Crear libro
             libro_id = self.app.crearLibro(validated_data)
+            publicacion_dep.pubApp.nuevaPublicacion({'mensaje': 'Nuevo libro agregado: ' + data.get('titulo', ''),'fecha_creacion': str(datetime.now())})
 
             return jsonify(ResponseApi.exito(
                     "Libro creado exitosamente"
@@ -229,6 +229,8 @@ class LibroControlador:
             # Actualizar libro
             modified_count = self.app.actualizarLibro(libro_id, validated_data)            
             if modified_count > 0:
+                publicacion_dep.pubApp.nuevaPublicacion({'mensaje': 'Libro actualizado: ' + data.get('titulo', ''),'fecha_creacion': str(datetime.now())})
+
                 return jsonify(ResponseApi.exito('Libro actualizado exitosamente',{
                     'modified_count': modified_count
                 }))
@@ -267,7 +269,8 @@ class LibroControlador:
     def libro_web_view(self, libro_id: str):
         """Renderiza la vista web detallada de un libro"""
         try:
-            libro = self.app.obtenerLibroInfo(libro_id)
+            userId = session.get('user_id') 
+            libro = self.app.obtenerLibroInfo(libro_id, userId)
             recomendaciones = recomendacion_dep.recomendarApp.obtenerRecomendacionPorLibro(libro_id)
             if libro:
                 return render_template('books/info.html', libro=libro.__dict__, recomendaciones=recomendaciones)

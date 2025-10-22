@@ -6,10 +6,16 @@ from src.dominio.servicios.calificacion.crearCalificacion_srv import CrearCalifi
 from src.dominio.servicios.calificacion.obtenerCalificacion_srv import ObtenerCalificacionServicio
 from src.dominio.servicios.calificacion.actualizarCalificacion_srv import ActualizarCalificacionServicio
 from src.dominio.servicios.calificacion.eliminarCalificacion_srv import EliminarCalificacionServicio
+from src.dominio.servicios.interaccion.interaccion_srv import InteraccionServicio
+from src.infrastuctura.repositorio.interaccion_rep import InteraccionRepositorio
+
 mongo_connection = MongoConnection()
 calificacion_repo = CalificacionRepositorio(mongo_connection)
 
-crear_calificacion_svc = CrearCalificacionServicio(calificacion_repo)
+interaccionRepo = InteraccionRepositorio()
+interaccionServ = InteraccionServicio(interaccionRepo)
+
+crear_calificacion_svc = CrearCalificacionServicio(calificacion_repo, interaccionServ)
 obtener_calificacion_svc = ObtenerCalificacionServicio(calificacion_repo)
 actualizar_calificacion_svc = ActualizarCalificacionServicio(calificacion_repo)
 eliminar_calificacion_svc = EliminarCalificacionServicio(calificacion_repo)

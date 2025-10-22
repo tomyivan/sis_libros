@@ -15,9 +15,9 @@ class LibroApp:
         self.crear_libro_srv = crear_libro_srv
         self.actualizar_libro_srv = actualizar_libro_srv
         self.eliminar_libro_srv = eliminar_libro_srv
-    def obtenerLibroInfo(self, libro_id: str) -> libro_mod.LibroInformacion:
+    def obtenerLibroInfo(self, libro_id: str, idUsuario: str = None) -> libro_mod.LibroInformacion:
         """Obtener información detallada de un libro por su ID, incluyendo estadísticas agregadas."""
-        return self.obtener_libro_srv.obtenerLibroInfo(libro_id)
+        return self.obtener_libro_srv.obtenerLibroInfo(libro_id, idUsuario)
 
 
     # Operaciones de consulta
@@ -70,3 +70,6 @@ class LibroApp:
         """Eliminar (desactivar) un libro"""
         return self.eliminar_libro_srv.eliminarLibro(libro_id)
 
+    def totalLibros(self) -> int:
+        """Contar el total de libros en el repositorio."""
+        return self.obtener_libro_srv.totalLibros()
